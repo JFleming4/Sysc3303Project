@@ -7,16 +7,19 @@ import java.net.SocketException;
 public class ErrorSimulator {
 	private DatagramSocket receiver;
 	private DatagramPacket clientPacket;
+	private static final int SERVER_PORT = 69;
+	private static final int ERROR_PORT = 23;
+	private static final int BUFF_SIZE = 512;
 	public ErrorSimulator() throws SocketException {
-		receiver = new DatagramSocket(23);
+		receiver = new DatagramSocket(ERROR_PORT);
 	}
 	public DatagramPacket sendReceiveServer(DatagramPacket clientPacket) throws IOException {
 		DatagramPacket serverSend = new DatagramPacket(
 				clientPacket.getData(), 
 				clientPacket.getLength(), 
 				InetAddress.getLocalHost(), 
-				69);
-		DatagramPacket serverReceive = new DatagramPacket(new byte[512], 512);
+				SERVER_PORT);
+		DatagramPacket serverReceive = new DatagramPacket(new byte[BUFF_SIZE], BUFF_SIZE);
 		DatagramSocket socket = new DatagramSocket();
 		socket.send(serverSend);
 		socket.receive(serverReceive);
@@ -24,7 +27,7 @@ public class ErrorSimulator {
 		return serverReceive;
 	}
 	public DatagramPacket receiveClient() throws IOException {
-		clientPacket = new DatagramPacket(new byte[512], 512);
+		clientPacket = new DatagramPacket(new byte[BUFF_SIZE], BUFF_SIZE);
 		receiver.receive(clientPacket);
 		return clientPacket;
 	}
@@ -48,7 +51,6 @@ public class ErrorSimulator {
 		} catch (SocketException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
