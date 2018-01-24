@@ -19,7 +19,6 @@ import java.util.Scanner;
  */
 public class FTPServer extends Thread {
 	private static final int SERVER_PORT = 69;
-	private static final int BUFF_SIZE = 512;
 	private static final int BUFF_HEADER_SIZE = 516;
 
 	private static final Logger LOG = new Logger("FTPServer");
@@ -159,8 +158,6 @@ public class FTPServer extends Thread {
 }
 
 class ServerWorker extends Thread {
-	private static final int BUFF_SIZE = 512;
-	private static final int BUFF_HEADER_SIZE = 516;
 	private static final Logger LOG = new Logger("ServerWorker");
 	private DatagramPacket packet;
 	private DatagramSocket socket;
@@ -271,32 +268,5 @@ class ServerWorker extends Thread {
 		// Send each data block sequentially
 		for(DataMessage m : messages)
 			sendMessage(m);
-	}
-
-	class ServerReceiver extends Thread {
-		private DatagramSocket receiver;
-		private DatagramPacket receivedPacket;
-
-		// private List<ServerWorker> workers;
-		public ServerReceiver(DatagramSocket socket) throws SocketException {
-			receiver = socket;
-			// workers = new ArrayList<ServerWorker>();
-		}
-
-		public void run() {
-			while (!receiver.isClosed()) {
-				receivedPacket = new DatagramPacket(new byte[BUFF_HEADER_SIZE], BUFF_HEADER_SIZE);
-				try {
-					receiver.receive(receivedPacket);
-					ServerWorker worker = new ServerWorker(receivedPacket);
-					// workers.add(worker);
-					worker.start();
-				} catch (IOException e) {
-					if (!receiver.isClosed()) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}
 	}
 }
