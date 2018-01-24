@@ -9,7 +9,8 @@ public class ErrorSimulator {
 	private DatagramPacket clientPacket;
 	private static final int SERVER_PORT = 69;
 	private static final int ERROR_PORT = 23;
-	private static final int BUFF_SIZE = 512;
+	// private static final int BUFF_SIZE = 512;
+	private static final int BUFF_HEADER_SIZE = 516;
 	public ErrorSimulator() throws SocketException {
 		receiver = new DatagramSocket(ERROR_PORT);
 	}
@@ -19,7 +20,7 @@ public class ErrorSimulator {
 				clientPacket.getLength(), 
 				InetAddress.getLocalHost(), 
 				SERVER_PORT);
-		DatagramPacket serverReceive = new DatagramPacket(new byte[BUFF_SIZE], BUFF_SIZE);
+		DatagramPacket serverReceive = new DatagramPacket(new byte[BUFF_HEADER_SIZE], BUFF_HEADER_SIZE);
 		DatagramSocket socket = new DatagramSocket();
 		socket.send(serverSend);
 		socket.receive(serverReceive);
@@ -27,7 +28,7 @@ public class ErrorSimulator {
 		return serverReceive;
 	}
 	public DatagramPacket receiveClient() throws IOException {
-		clientPacket = new DatagramPacket(new byte[BUFF_SIZE], BUFF_SIZE);
+		clientPacket = new DatagramPacket(new byte[BUFF_HEADER_SIZE], BUFF_HEADER_SIZE);
 		receiver.receive(clientPacket);
 		return clientPacket;
 	}
