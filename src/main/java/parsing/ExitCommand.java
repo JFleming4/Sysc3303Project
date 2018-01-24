@@ -16,6 +16,7 @@ public class ExitCommand extends Command {
 	
 	@Override
 	public void execute() {
-		
+		LOG.logQuiet("Shutting down.");
+		System.exit(0);
 	}
 }
