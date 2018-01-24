@@ -7,7 +7,7 @@ import java.util.List;
 public abstract class SocketCommand extends Command {
 	private static final int FILENAME_IDX = 1;
 	private static final int SERVER_ADDR_IDX = 2;
-	private static final int SERVER_ADDR_PORT = 69;
+	public static final int SERVER_ADDR_PORT = 69;
 	private static final String SOCKET_COMMAND_FORMAT = "FILENAME SERVER_ADDRESS [--verbose|-v] [--test|-t]";
 	
 	private static enum Options {
