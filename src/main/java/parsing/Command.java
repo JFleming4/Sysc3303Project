@@ -3,8 +3,11 @@ package parsing;
 import java.util.Arrays;
 import java.util.List;
 
+import logging.Logger;
+
 
 public abstract class Command {
+	protected static final Logger LOG = new Logger("FTPClient");
 	private static final int OPERATION_IDX = 0;
 
 	protected final String operation;
