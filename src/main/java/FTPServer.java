@@ -1,10 +1,4 @@
-import formats.AckMessage;
-import formats.DataMessage;
-import formats.Message;
-import formats.RequestMessage;
-import exceptions.InvalidPacketException;
-import logging.Logger;
-
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -13,14 +7,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import exceptions.InvalidPacketException;
+import formats.AckMessage;
+import formats.DataMessage;
+import formats.RequestMessage;
+import logging.Logger;
+import resources.ResourceManager;
+import socket.TFTPDatagramSocket;
+
 
 /**
  * Represents a TFTP server
  */
+
 public class FTPServer extends Thread {
 	private static final int SERVER_PORT = 69;
 	private static final int BUFF_HEADER_SIZE = 516;
-
+	public static final String RESOURCE_DIR = "server";
 	private static final Logger LOG = new Logger("FTPServer");
 	private DatagramSocket connection;
 	private List<ServerWorker> serverWorkers;
@@ -28,6 +31,13 @@ public class FTPServer extends Thread {
 	public FTPServer() throws SocketException {
 		connection = new DatagramSocket(SERVER_PORT);
 		serverWorkers = new ArrayList<>();
+	}
+
+	/**
+	 * @return the server address
+	 */
+	public String getServerAddress() {
+		return connection.getLocalAddress().toString();
 	}
 
 	/**
@@ -104,12 +114,12 @@ public class FTPServer extends Thread {
 		Logger.setLogLevel(Logger.LogLevel.VERBOSE);
 		LOG.logQuiet("Starting Server");
 		LOG.logQuiet("Current Log Level: " + Logger.getLogLevel().name());
-		LOG.logVerbose("Server Port: " + SERVER_PORT);
 
 
 		try {
 			// Create and start the server thread
 			FTPServer server = new FTPServer();
+			LOG.logVerbose("Server Listening at: " + server.getServerAddress() +":" + SERVER_PORT);
 			server.start();
 
 			boolean runServer = true;
@@ -159,11 +169,13 @@ public class FTPServer extends Thread {
 
 class ServerWorker extends Thread {
 	private static final Logger LOG = new Logger("ServerWorker");
+	private TFTPDatagramSocket socket;
 	private DatagramPacket packet;
-	private DatagramSocket socket;
+	private ResourceManager resourceManager;
 
 	public ServerWorker(DatagramPacket p) throws SocketException {
 		this.packet = p;
+		this.resourceManager = new ResourceManager(FTPServer.RESOURCE_DIR);
 	}
 
 	@Override
@@ -171,7 +183,7 @@ class ServerWorker extends Thread {
 
 		try {
 			// Create the socket within the context of the thread
-			socket = new DatagramSocket();
+			socket = new TFTPDatagramSocket();
 
 			// Parse data into a DAO that is accessible
 			RequestMessage receivedMessage = RequestMessage.parseDataFromPacket(this.packet);
@@ -219,8 +231,14 @@ class ServerWorker extends Thread {
 	 * @throws IOException
 	 */
 	private void readRequest(RequestMessage message) throws IOException {
-		// TODO: Implement file reading functionality
-		sendData(new byte[0]);
+		try {
+		    byte [] fileBytes = resourceManager.readFileToBytes(message.getFileName());
+		    sendDataBlock(fileBytes);
+		    socket.close();
+		} catch (FileNotFoundException e) {
+			System.out.println("File " + message.getFileName() + " Not Found");
+			socket.close();
+		}
 	}
 
 	/**
@@ -232,41 +250,29 @@ class ServerWorker extends Thread {
 
 		// According to TFTP protocol, a WRQ is acknowledged by an ACK or ERROR packet.
 		// A WRQ ACK will always have a block number of zero
-		sendAck(0);
+		socket.sendAck(0,packet.getSocketAddress());
 	}
 
-	/**
-	 * Sends a TFTP message over the socket
-	 * @param msg The message to send
-	 * @throws IOException
-	 */
-	private void sendMessage(Message msg) throws IOException
-	{
-		byte[] data = msg.toByteArray();
-		socket.send(new DatagramPacket(data, data.length, packet.getSocketAddress()));
-	}
 
-	/**
-	 * Send block acknowledgement message
-	 * @param blockNum The block number to acknowledge
-	 * @throws IOException
-	 */
-	private void sendAck(int blockNum) throws IOException {
-		sendMessage(new AckMessage(blockNum));
-	}
 
-	/**
-	 * Sends an array of bytes over TFTP, splicing the data in blocks if necessary
-	 * @param data The array of data
-	 * @throws IOException
-	 */
-	private void sendData(byte[] data) throws IOException {
+	   /**
+     * Sends an array of bytes over TFTP, splicing the data in blocks if necessary
+     * @param data The array of data
+     * @param socketAddress The Socket address used in sending packet
+     * @throws IOException
+     */
+    private void sendDataBlock(byte[] data) throws IOException {
 
-		// Create a sequence of data for the byte array
-		List<DataMessage> messages = DataMessage.createDataMessageSequence(data);
+        // Create a sequence of data for the byte array
+        List<DataMessage> messages = DataMessage.createDataMessageSequence(data);
 
-		// Send each data block sequentially
-		for(DataMessage m : messages)
-			sendMessage(m);
-	}
+        // Send each data block sequentially
+        for(DataMessage m : messages) {
+            socket.sendMessage(m, packet.getSocketAddress());
+            AckMessage ack = socket.receiveAck(m.getBlockNum());
+            if(ack.getBlockNum() != m.getBlockNum()) {
+                throw new IOException("Invalid Block Number");
+                }
+            }
+        }
 }

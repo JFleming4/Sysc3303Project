@@ -8,7 +8,7 @@ public class FTPClient {
 		Scanner sc = new Scanner(System.in);
 		Command command = null;
 		String input;
-		
+
 		for (;;) {
 			System.out.print(">> ");
 			input = sc.nextLine();

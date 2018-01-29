@@ -1,8 +1,10 @@
 package parsing;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.util.List;
+
 
 public abstract class SocketCommand extends Command {
 	private static final int FILENAME_IDX = 1;
@@ -46,9 +48,9 @@ public abstract class SocketCommand extends Command {
 	public SocketCommand(String operation, List<String> tokens) {
 		super(operation, SOCKET_COMMAND_FORMAT, tokens);
 	}
-	
-	public SocketAddress getServerAddress() {
-		return new InetSocketAddress(tokens.get(SERVER_ADDR_IDX), SERVER_ADDR_PORT);
+
+	public InetSocketAddress getServerAddress() throws UnknownHostException {
+		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), SERVER_ADDR_PORT);
 	}
 	
 	public String getFilename() {

@@ -5,6 +5,7 @@ import exceptions.InvalidPacketException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,6 +17,7 @@ public class DataMessage extends Message{
 
     private int blockNum;
     private byte[] data;
+    private SocketAddress socketAddress;
     private static final int MAX_BLOCK_SIZE = 512;
 
     /**
@@ -33,10 +35,29 @@ public class DataMessage extends Message{
     }
 
     /**
+     * Create a data message with socketAddress.
+     * @param blockNum The block number. Must be >= 1 otherwise a runtime exception will be thrown
+     * @param data  The data to be included in the message. Maximum data size of 512 bytes. Will be truncated if necessary.
+     * @param socketAddress The socket address of the sender
+     */
+    private DataMessage(int blockNum, byte[] data, SocketAddress socketAddress)
+    {
+        this(blockNum, data);
+        this.socketAddress = socketAddress;
+    }
+
+    /**
      * @return The block number of the given data
      */
     public int getBlockNum() {
         return blockNum;
+    }
+
+    /**
+     * @return The block number of the given data
+     */
+    public SocketAddress getSocketAddress() {
+        return socketAddress;
     }
 
     /**
@@ -96,20 +117,22 @@ public class DataMessage extends Message{
     /**
      * Creates a DataMessage object from a packet object
      * @param packet The packet object containing the data to be parsed
+     * @param socketAddress The socket address of the sender
      * @return The DataMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
     public static DataMessage parseDataFromPacket(DatagramPacket packet) throws InvalidPacketException {
-        return parseDataFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
+        return parseDataFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()), packet.getSocketAddress());
     }
 
     /**
-     * Creates a RequestMessage object from a byte array
+     * Creates a DataMessage object from a byte array
      * @param data The Data retrieved in a packet
+     * @param socketAddress The socket address of the sender
      * @return The DataMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static DataMessage parseDataFromBytes(byte[] data) throws InvalidPacketException {
+    private static DataMessage parseDataFromBytes(byte[] data, SocketAddress socketAddress) throws InvalidPacketException {
         // Data Messages have a minimum size of 4.
         if (data.length < 4)
             throw new InvalidPacketException("Packet length too short");
@@ -149,6 +172,6 @@ public class DataMessage extends Message{
         else
             sentData = Arrays.copyOfRange(data, ptr, data.length);
 
-        return new DataMessage(blockNum, sentData);
+        return new DataMessage(blockNum, sentData, socketAddress);
     }
 }

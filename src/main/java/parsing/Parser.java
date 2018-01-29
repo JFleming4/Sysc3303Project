@@ -1,5 +1,4 @@
 package parsing;
-
 public class Parser {
 	public static Command parse(String[] tokens) {
 		Command cmd;
@@ -14,7 +13,10 @@ public class Parser {
 			cmd = new ExitCommand(tokens);
 			break;
 		case "HELP":
+			cmd = new HelpCommand(tokens);
+			break;
 		default:
+			System.out.println("Invalid Command. See our valid commands below:");
 			cmd = new HelpCommand(tokens);
 			break;
 		}
