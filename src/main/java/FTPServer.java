@@ -22,7 +22,7 @@ import socket.TFTPDatagramSocket;
 
 public class FTPServer extends Thread {
 	private static final int SERVER_PORT = 69;
-	private static final int BUFF_HEADER_SIZE = 516;
+	public static final int BUFF_HEADER_SIZE = 516;
 	public static final String RESOURCE_DIR = "server";
 	private static final Logger LOG = new Logger("FTPServer");
 	private DatagramSocket connection;
@@ -250,7 +250,33 @@ class ServerWorker extends Thread {
 
 		// According to TFTP protocol, a WRQ is acknowledged by an ACK or ERROR packet.
 		// A WRQ ACK will always have a block number of zero
-		socket.sendAck(0,packet.getSocketAddress());
+        int expBlockNum = 0;
+        String fileName = message.getFileName();
+		socket.sendAck(expBlockNum++,packet.getSocketAddress());
+		for(;;) {
+            LOG.logVerbose("Waiting to receive Block");
+            DataMessage dataMessage;
+            try {
+                dataMessage = socket.receiveData();
+                // Initialize block number to one sent from server
+                if(dataMessage.getBlockNum() != expBlockNum) throw new Error("Unexpected Block Number");
+
+                resourceManager.writeBytesToFile(fileName, dataMessage.getData());
+
+                // Update Block number and send
+                socket.sendAck(expBlockNum++, dataMessage.getSocketAddress());
+
+                if(dataMessage.getData().length < FTPServer.BUFF_HEADER_SIZE - 4) {
+                    LOG.logVerbose("End of read file reached");
+                    break;
+                }
+            } catch (InvalidPacketException e) {
+                e.printStackTrace();
+            }
+        }
+		socket.close();
+
+
 	}
 
 
@@ -271,7 +297,7 @@ class ServerWorker extends Thread {
             socket.sendMessage(m, packet.getSocketAddress());
             AckMessage ack;
             try {
-                ack = socket.receiveAck(m.getBlockNum());
+                ack = socket.receiveAck();
                 if(ack.getBlockNum() != m.getBlockNum()) {
                     throw new IOException("Invalid Block Number");
                 }

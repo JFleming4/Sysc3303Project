@@ -1,7 +1,5 @@
 package formats;
 
-import exceptions.InvalidPacketException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -9,6 +7,8 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import exceptions.InvalidPacketException;
 
 /**
  * Representation of a TFTP Data Message

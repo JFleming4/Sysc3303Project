@@ -66,7 +66,7 @@ public class TFTPDatagramSocket extends DatagramSocket {
      * @throws IOException
      * @throws InvalidPacketException
      */
-    public AckMessage receiveAck(int blockNum) throws InvalidPacketException, IOException {
+    public AckMessage receiveAck() throws InvalidPacketException, IOException {
         return AckMessage.parseDataFromPacket(receiveMessage());
     }
 
