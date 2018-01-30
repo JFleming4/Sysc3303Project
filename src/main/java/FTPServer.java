@@ -22,7 +22,7 @@ import socket.TFTPDatagramSocket;
 
 public class FTPServer extends Thread {
 	private static final int SERVER_PORT = 69;
-	public static final int BUFF_HEADER_SIZE = 516;
+	private static final int BUFF_HEADER_SIZE = 516;
 	public static final String RESOURCE_DIR = "server";
 	private static final Logger LOG = new Logger("FTPServer");
 	private DatagramSocket connection;
@@ -266,7 +266,7 @@ class ServerWorker extends Thread {
                 // Update Block number and send
                 socket.sendAck(expBlockNum++, dataMessage.getSocketAddress());
 
-                if(dataMessage.getData().length < FTPServer.BUFF_HEADER_SIZE - 4) {
+                if(dataMessage.getData().length < socket.BUFF_HEADER_SIZE - 4) {
                     LOG.logVerbose("End of read file reached");
                     break;
                 }

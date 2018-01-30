@@ -22,15 +22,7 @@ public class AckMessage extends Message {
      */
     public AckMessage(int blockNum)
     {
-        if(blockNum < 0)
-            throw new RuntimeException("blockNum can not be less than 0");
-
-        // If blockNum is larger than max positive short value,
-        // throw exception
-        if (blockNum > 0xFFFF)
-            throw new RuntimeException("blockNum can not be more than " + 0xFFFF);
-
-        this.blockNum = blockNum;
+       this(blockNum, null);
     }
 
     /**
@@ -82,7 +74,7 @@ public class AckMessage extends Message {
     }
 
     /**
-     * @return The block number of the given data
+     * @return The sender socket address
      */
     public SocketAddress getSocketAddress() {
         return socketAddress;
