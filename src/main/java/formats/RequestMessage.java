@@ -1,19 +1,17 @@
 package formats;
 
 
-import exceptions.InvalidPacketException;
-import logging.Logger;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.Arrays;
 
+import exceptions.InvalidPacketException;
+
 /**
  * Representation of a TFTP Request Message
  */
 public class RequestMessage extends Message {
-    private final static Logger LOG = new Logger("RequestMessage");
     private MessageType type;
     private String fileName;
     private String mode;

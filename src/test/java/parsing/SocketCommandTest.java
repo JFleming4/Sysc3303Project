@@ -3,6 +3,7 @@ package parsing;
 import static org.junit.Assert.*;
 
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -26,7 +27,11 @@ public class SocketCommandTest extends CommandTest {
 	
 	@Test
 	public void testserverAddress() {
-		assertEquals(new InetSocketAddress(SERVER_ADDRESS, SocketCommand.SERVER_ADDR_PORT), socketCmd.getServerAddress());	
+		try {
+            assertEquals(new InetSocketAddress(SERVER_ADDRESS, SocketCommand.SERVER_ADDR_PORT), socketCmd.getServerAddress());
+        } catch (UnknownHostException e) {
+            fail(e.getMessage());
+        }
 	}
 	
 	@Test
