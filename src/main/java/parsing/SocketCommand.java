@@ -7,23 +7,26 @@ import java.util.List;
 
 
 public abstract class SocketCommand extends Command {
-	private static final int FILENAME_IDX = 1;
-	private static final int SERVER_ADDR_IDX = 2;
-	public static final int SERVER_ADDR_PORT = 69;
-	private static final String SOCKET_COMMAND_FORMAT = "FILENAME SERVER_ADDRESS [--verbose|-v] [--test|-t]";
-	
+    private static final int FILENAME_IDX = 1;
+    private static final int SERVER_ADDR_IDX = 2;
+    public static final int SERVER_ADDR_PORT = 69;
+    private static final String SOCKET_COMMAND_FORMAT = "FILENAME SERVER_ADDRESS [--verbose|-v] [--test|-t]";
+    protected static final int BUFF_HEADER_SIZE = 516;
+    protected static final String RESOURCE_DIR = "client";
+    protected static final int SOCKET_TIMETOUT = 5000;
+
 	private static enum Options {
 		VERBOSE_LONG("--verbose"),
 		VERBOSE_SHORT("-v"),
 		TEST_LONG("--test"),
 		TEST_SHORT("-t");
-		
+
 		private String option;
-		
+
 		Options(String option) {
 			this.option = option;
 		}
-		
+
 		public static boolean isVerbose(String option) {
 			if (option.equals(VERBOSE_SHORT.option))
 				return true;
@@ -31,7 +34,7 @@ public abstract class SocketCommand extends Command {
 				return true;
 			return false;
 		}
-		
+
 		public static boolean isTest(String option) {
 			if (option.equals(TEST_SHORT.option))
 				return true;
@@ -52,7 +55,7 @@ public abstract class SocketCommand extends Command {
 	public InetSocketAddress getServerAddress() throws UnknownHostException {
 		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), SERVER_ADDR_PORT);
 	}
-	
+
 	public String getFilename() {
 		return tokens.get(FILENAME_IDX);
 	}
@@ -64,7 +67,7 @@ public abstract class SocketCommand extends Command {
 		}
 		return false;
 	}
-	
+
 	public boolean isTest() {
 		for (String option : tokens) {
 			if (Options.isTest(option))

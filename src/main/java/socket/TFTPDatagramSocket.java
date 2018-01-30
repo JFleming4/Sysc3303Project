@@ -64,17 +64,10 @@ public class TFTPDatagramSocket extends DatagramSocket {
      * Receive acknowledgement message
      * @param blockNum the block number expected
      * @throws IOException
+     * @throws InvalidPacketException
      */
-    public AckMessage receiveAck(int blockNum) throws IOException {
-        AckMessage ack;
-        try {
-            ack = AckMessage.parseDataFromPacket(receiveMessage());
-        } catch (InvalidPacketException e) {
-            ack = null;
-            e.printStackTrace();
-        }
-        return ack;
-
+    public AckMessage receiveAck(int blockNum) throws InvalidPacketException, IOException {
+        return AckMessage.parseDataFromPacket(receiveMessage());
     }
 
 	/**
@@ -87,15 +80,14 @@ public class TFTPDatagramSocket extends DatagramSocket {
 		sendMessage(new RequestMessage(reqType, filename, DEFAULT_MODE), socketAddress);
 	}
 
-	public DataMessage receiveData() throws IOException {
-		DataMessage data;
-		try {
-			data = DataMessage.parseDataFromPacket(receiveMessage());
-		} catch (InvalidPacketException e) {
-			data = null;
-			e.printStackTrace();
-		}
-		return data;
+    /**
+     * Return Data Message from socket
+     * @return DataMessage
+     * @throws InvalidPacketException
+     * @throws IOException
+     */
+	public DataMessage receiveData() throws InvalidPacketException, IOException {
+	    return DataMessage.parseDataFromPacket(receiveMessage());
 	}
 
 }

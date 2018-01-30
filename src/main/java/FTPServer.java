@@ -269,10 +269,15 @@ class ServerWorker extends Thread {
         // Send each data block sequentially
         for(DataMessage m : messages) {
             socket.sendMessage(m, packet.getSocketAddress());
-            AckMessage ack = socket.receiveAck(m.getBlockNum());
-            if(ack.getBlockNum() != m.getBlockNum()) {
-                throw new IOException("Invalid Block Number");
+            AckMessage ack;
+            try {
+                ack = socket.receiveAck(m.getBlockNum());
+                if(ack.getBlockNum() != m.getBlockNum()) {
+                    throw new IOException("Invalid Block Number");
                 }
+            } catch (InvalidPacketException e) {
+                e.printStackTrace();
             }
         }
+    }
 }
