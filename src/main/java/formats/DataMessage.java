@@ -1,7 +1,5 @@
 package formats;
 
-import exceptions.InvalidPacketException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -9,6 +7,8 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import exceptions.InvalidPacketException;
 
 /**
  * Representation of a TFTP Data Message
@@ -27,11 +27,7 @@ public class DataMessage extends Message{
      */
     public DataMessage(int blockNum, byte[] data)
     {
-        if(blockNum < 1)
-            throw new RuntimeException("blockNum can not be less than 1");
-
-        this.blockNum = blockNum;
-        this.data = Arrays.copyOf(data, Math.min(data.length, MAX_BLOCK_SIZE));
+       this(blockNum, data, null);
     }
 
     /**
@@ -42,7 +38,11 @@ public class DataMessage extends Message{
      */
     private DataMessage(int blockNum, byte[] data, SocketAddress socketAddress)
     {
-        this(blockNum, data);
+        if(blockNum < 1)
+            throw new RuntimeException("blockNum can not be less than 1");
+
+        this.blockNum = blockNum;
+        this.data = Arrays.copyOf(data, Math.min(data.length, MAX_BLOCK_SIZE));
         this.socketAddress = socketAddress;
     }
 
@@ -54,7 +54,7 @@ public class DataMessage extends Message{
     }
 
     /**
-     * @return The block number of the given data
+     * @return The sender socket address
      */
     public SocketAddress getSocketAddress() {
         return socketAddress;

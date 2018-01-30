@@ -14,7 +14,7 @@ import formats.Message.MessageType;
 import formats.RequestMessage;
 
 public class TFTPDatagramSocket extends DatagramSocket {
-	private static final int BUFF_HEADER_SIZE = 516;
+	public static final int BUFF_HEADER_SIZE = 516;
 	private static final String DEFAULT_MODE = "netascii";
 
 	public TFTPDatagramSocket() throws SocketException {
@@ -66,7 +66,7 @@ public class TFTPDatagramSocket extends DatagramSocket {
      * @throws IOException
      * @throws InvalidPacketException
      */
-    public AckMessage receiveAck(int blockNum) throws InvalidPacketException, IOException {
+    public AckMessage receiveAck() throws InvalidPacketException, IOException {
         return AckMessage.parseDataFromPacket(receiveMessage());
     }
 

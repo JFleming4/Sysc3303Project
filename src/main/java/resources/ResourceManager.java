@@ -35,7 +35,7 @@ public class ResourceManager {
 	 * @return bytes read from file
 	 * @throws IOException
 	 */
-	public byte[] readFileToBytes(String filename) throws IOException {
+	public synchronized byte[] readFileToBytes(String filename) throws IOException {
 		File file = Paths.get(directory.toString(), filename).toFile();
 	    FileInputStream fileInputStream = new FileInputStream(file);
 	    long fileLength = file.length();
@@ -46,12 +46,21 @@ public class ResourceManager {
 	}
 
 	/**
+	 * Check if a file exists in the resource directory
+	 * @param filename name of file to check
+	 * @return boolean
+	 */
+	public synchronized boolean fileExists(String filename) {
+	    return Paths.get(directory.toString(), filename).toFile().exists();
+	}
+
+	/**
 	 * Writes bytes to the file (The current implementation will not overwrite files)
 	 * @param filename The name of the file
 	 * @param data The bytes to write
 	 * @throws IOException
 	 */
-	public void writeBytesToFile(String filename, byte[] data) throws IOException {
+	public synchronized void writeBytesToFile(String filename, byte[] data) throws IOException {
 		File file = Paths.get(directory.toString(), filename).toFile();
 		if(!file.exists()) {
 			if(!file.createNewFile()) throw new IOException("Cannot Create File");

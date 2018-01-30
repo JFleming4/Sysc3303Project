@@ -1,10 +1,12 @@
 package formats;
 
-import exceptions.InvalidPacketException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.SocketAddress;
 import java.util.Arrays;
+
+import exceptions.InvalidPacketException;
 
 /**
  * Representation of a TFTP ACK Message
@@ -12,6 +14,7 @@ import java.util.Arrays;
 public class AckMessage extends Message {
 
     private int blockNum;
+    private SocketAddress socketAddress;
 
     /**
      * Create the acknowledgement message
@@ -19,14 +22,24 @@ public class AckMessage extends Message {
      */
     public AckMessage(int blockNum)
     {
-        if(blockNum < 1)
-            throw new RuntimeException("blockNum can not be less than 1");
+       this(blockNum, null);
+    }
+
+    /**
+     * Create the acknowledgement message
+     * @param blockNum Unsigned short. The block number. Can not be negative. Limited to max positive short value
+     * @param socketAddress The socket address from which the request was sent
+     */
+    public AckMessage(int blockNum, SocketAddress socketAddress)
+    {
+        if(blockNum < 0)
+            throw new RuntimeException("blockNum can not be less than 0");
 
         // If blockNum is larger than max positive short value,
         // throw exception
         if (blockNum > 0xFFFF)
             throw new RuntimeException("blockNum can not be more than " + 0xFFFF);
-
+        this.socketAddress = socketAddress;
         this.blockNum = blockNum;
     }
 
@@ -61,13 +74,20 @@ public class AckMessage extends Message {
     }
 
     /**
+     * @return The sender socket address
+     */
+    public SocketAddress getSocketAddress() {
+        return socketAddress;
+    }
+
+    /**
      * Creates a AckMessage object from a packet object
      * @param packet The packet object containing the data to be parsed
      * @return The AckMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
     public static AckMessage parseDataFromPacket(DatagramPacket packet) throws InvalidPacketException {
-        return parseDataFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
+        return parseDataFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()), packet.getSocketAddress());
     }
 
     /**
@@ -76,7 +96,7 @@ public class AckMessage extends Message {
      * @return The AckMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static AckMessage parseDataFromBytes(byte[] data) throws InvalidPacketException {
+    public static AckMessage parseDataFromBytes(byte[] data, SocketAddress socketAddress) throws InvalidPacketException {
         // ACK has packet size of strictly 4
         if (data.length != 4)
             throw new InvalidPacketException("Invalid packet length");
@@ -104,14 +124,14 @@ public class AckMessage extends Message {
         ptr += 2;
 
         // Check if the type is valid
-        if(blockNum < 1)
-            throw new InvalidPacketException("The block number can not be less than 1");
+        if(blockNum < 0)
+            throw new InvalidPacketException("The block number can not be less than 0");
 
         // Check if we are at the end of the data (0 bytes of data)
         if (ptr != data.length)
             throw new InvalidPacketException("The data packet contains too many bytes");
 
-        return new AckMessage(blockNum);
+        return new AckMessage(blockNum, socketAddress);
     }
 
 
