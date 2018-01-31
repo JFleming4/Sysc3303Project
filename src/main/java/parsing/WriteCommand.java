@@ -29,7 +29,7 @@ public class WriteCommand extends SocketCommand {
 	}
 
 	@Override
-	public void execute() {
+	public void execute_operation() {
         if(this.tokens.size() < 3) {
             LOG.logQuiet("Error: Not enough arguments");
         }

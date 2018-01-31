@@ -2,14 +2,19 @@ package parsing;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.List;
+
+import components.ErrorSimulator;
+import logging.Logger;
 
 
 public abstract class SocketCommand extends Command {
     private static final int FILENAME_IDX = 1;
     private static final int SERVER_ADDR_IDX = 2;
     public static final int SERVER_ADDR_PORT = 69;
+    public static final int ERROR_PORT = 23;
     private static final String SOCKET_COMMAND_FORMAT = "FILENAME SERVER_ADDRESS [--verbose|-v] [--test|-t]";
     protected static final int BUFF_HEADER_SIZE = 516;
     protected static final String RESOURCE_DIR = "client";
@@ -51,9 +56,39 @@ public abstract class SocketCommand extends Command {
 	public SocketCommand(String operation, List<String> tokens) {
 		super(operation, SOCKET_COMMAND_FORMAT, tokens);
 	}
+	
+	@Override
+	public void execute() {
+		ErrorSimulator sim = null;
+		if (isTest()) {
+			try {
+				sim = new ErrorSimulator(serverAddress(), isVerbose());
+				sim.start();
+			} catch (SocketException e) {
+				e.printStackTrace();
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		execute_operation();
+		
+		if (sim != null) {
+			sim.stopServer();
+			try {
+				sim.join();
+			} catch (InterruptedException e) {
+				// Ignored
+			}
+		}
+	}
+	
+	protected abstract void execute_operation();
 
 	public InetSocketAddress getServerAddress() throws UnknownHostException {
-		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), SERVER_ADDR_PORT);
+		if (isTest())
+			return errorSimulatorAddress();
+		return serverAddress(); 
 	}
 
 	public String getFilename() {
@@ -74,5 +109,21 @@ public abstract class SocketCommand extends Command {
 				return true;
 		}
 		return false;
+	}
+	
+	@Override
+	protected void setLogLevel() {
+		if (isVerbose())
+			Logger.setLogLevel(Logger.LogLevel.VERBOSE);
+		else
+			Logger.setLogLevel(Logger.LogLevel.QUIET);
+	}
+	
+	private InetSocketAddress errorSimulatorAddress() throws UnknownHostException {
+		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), ERROR_PORT);
+	}
+	
+	private InetSocketAddress serverAddress() throws UnknownHostException {
+		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), SERVER_ADDR_PORT);
 	}
 }

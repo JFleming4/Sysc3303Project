@@ -25,7 +25,7 @@ public class ReadCommand extends SocketCommand {
 	}
 
 	@Override
-	public void execute() {
+	public void execute_operation() {
 		if(this.tokens.size() < 3) {
 			LOG.logQuiet("Error: Not enough arguments");
 		}
@@ -37,7 +37,6 @@ public class ReadCommand extends SocketCommand {
 				socket.setSoTimeout(SOCKET_TIMETOUT);
 				socket.sendRequest(MessageType.RRQ ,this.getFilename(), this.getServerAddress());
 				for(;;) {
-					LOG.logVerbose("Waiting to receive Block");
 					DataMessage dataMessage;
                     try {
                         dataMessage = socket.receiveData();

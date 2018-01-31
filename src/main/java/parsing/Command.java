@@ -23,6 +23,7 @@ public abstract class Command {
 		this.operation = operation;
 		this.format = format;
 		this.tokens = tokens;
+		setLogLevel();
 	}
 	
 	public abstract void execute();
@@ -41,5 +42,9 @@ public abstract class Command {
 		buffer.append(" ");
 		buffer.append(format);
 		return buffer.toString();
+	}
+	
+	protected void setLogLevel() {
+		Logger.setLogLevel(Logger.LogLevel.QUIET);
 	}
 }
