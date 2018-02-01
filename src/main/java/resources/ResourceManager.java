@@ -1,5 +1,7 @@
 package resources;
 
+import logging.Logger;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -9,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ResourceManager {
+	private static final Logger LOG = new Logger("ResourceManager");
 	private static final String RESOURCE_DIR = "resources";
 	private Path directory;
 
@@ -17,15 +20,13 @@ public class ResourceManager {
 	 * Initialize Resource Directory
 	 * @param directoryName
 	 */
-	public ResourceManager(String directoryName) {
+	public ResourceManager(String directoryName) throws IOException{
 		directory = Paths.get(System.getProperty("user.dir"), RESOURCE_DIR, directoryName);
-		if(Files.notExists(directory)) {
-			try {
-				if(!directory.toFile().mkdirs()) throw new IOException("Directory Structure not created");
-			}
-			catch(IOException e) {
-				e.printStackTrace();
-			}
+		LOG.logVerbose("Resource Manager created with directory " + getFullPath());
+
+		if(Files.notExists(directory) && !directory.toFile().mkdirs()) {
+			LOG.logQuiet("The directory '" + getFullPath() + "' does not exist and failed to be created.");
+			throw new IOException("Failed to create the directory " + getFullPath());
 		}
 	}
 
@@ -37,11 +38,13 @@ public class ResourceManager {
 	 */
 	public synchronized byte[] readFileToBytes(String filename) throws IOException {
 		File file = Paths.get(directory.toString(), filename).toFile();
+		LOG.logVerbose("Reading File to byte array. File:  " + file.getCanonicalPath());
 	    FileInputStream fileInputStream = new FileInputStream(file);
 	    long fileLength = file.length();
 	    byte [] fileBytes = new byte [(int) fileLength];
 	    fileInputStream.read(fileBytes, 0, (int) fileLength);
 	    fileInputStream.close();
+		LOG.logVerbose("Successfully read file. (" + file.getCanonicalPath() + ")");
 	    return fileBytes;
 	}
 
@@ -70,15 +73,21 @@ public class ResourceManager {
 	 */
 	public synchronized void writeBytesToFile(String filename, byte[] data) throws IOException {
 		File file = Paths.get(directory.toString(), filename).toFile();
-		if(!file.exists()) {
-			if(!file.createNewFile()) throw new IOException("Cannot Create File");
+		LOG.logVerbose("Writing byte array to File. File:  " + file.getCanonicalPath());
+
+		if(!file.exists() && !file.createNewFile()) {
+			LOG.logVerbose("File does not exist and failed to be created. (" + file.getCanonicalPath() + ")");
+			throw new IOException("Failed to create file (" + file.getCanonicalPath() + ")");
 		}
+
+		// Append block to file
 		FileOutputStream  fileOutputStream = new FileOutputStream(file, true);
 		try {
 			fileOutputStream.write(data);
 		} finally {
 			fileOutputStream.close();
 		}
+		LOG.logVerbose("Successfully wrote data block to file (" + file.getCanonicalPath() + ")");
 	}
 
 }

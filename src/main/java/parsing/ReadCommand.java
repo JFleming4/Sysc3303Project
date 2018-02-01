@@ -33,10 +33,12 @@ public class ReadCommand extends SocketCommand {
 			LOG.logQuiet("Error: Not enough arguments");
 		}
 		else {
-            ResourceManager resourceManager = new ResourceManager(RESOURCE_DIR);
 
 			int expBlockNum = -1;
 			try {
+				// Create the resource manager, handle IOException if failed to get resource directory
+				ResourceManager resourceManager = new ResourceManager(RESOURCE_DIR);
+
 			    socket = new TFTPDatagramSocket();
 				socket.setSoTimeout(SOCKET_TIMETOUT);
 
@@ -72,7 +74,8 @@ public class ReadCommand extends SocketCommand {
 
                         // Check if this was the last block
                         if(dataMessage.isFinalBlock()) {
-                            LOG.logQuiet("End of read file reached");
+                            LOG.logVerbose("End of read file reached");
+							LOG.logQuiet("Successfully received file");
                             break;
                         }
 
@@ -82,10 +85,12 @@ public class ReadCommand extends SocketCommand {
 				}
 			} catch(UnknownHostException uHE) {
 				LOG.logQuiet("Error: Unknown Host Entered");
-			}catch(IOException ioE) {
+			} catch(IOException ioE) {
+				LOG.logVerbose("An IOException has occurred: " + ioE.getLocalizedMessage());
 				ioE.printStackTrace();
+			} finally {
+				socket.close();
 			}
-		    socket.close();
 		}
 	}
 }

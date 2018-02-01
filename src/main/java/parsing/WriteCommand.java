@@ -36,9 +36,8 @@ public class WriteCommand extends SocketCommand {
             LOG.logQuiet("Error: Not enough arguments");
         }
         else {
-            ResourceManager resourceManager = new ResourceManager(RESOURCE_DIR);
-
             try {
+                ResourceManager resourceManager = new ResourceManager(RESOURCE_DIR);
                 if(!resourceManager.fileExists(this.getFilename()))
                     throw new FileNotFoundException("File Not Found");
 
@@ -74,6 +73,8 @@ public class WriteCommand extends SocketCommand {
                     sE.printStackTrace();
             } catch (FileNotFoundException fNFE) {
                 LOG.logQuiet("Error: " + fNFE.getMessage());
+            } catch (IOException ioE) {
+                LOG.logVerbose("IOException occurred. " + ioE.getLocalizedMessage());
             }
         }
 	}

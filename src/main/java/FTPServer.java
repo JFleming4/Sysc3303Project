@@ -181,7 +181,7 @@ class ServerWorker extends Thread {
 	private DatagramPacket packet;
 	private ResourceManager resourceManager;
 
-	public ServerWorker(long workerId, DatagramPacket p) throws SocketException {
+	public ServerWorker(long workerId, DatagramPacket p) throws IOException {
 	    // Include Worker ID in Log Tag
 	    LOG.setComponentName("ServerWorker-" + workerId);
 
