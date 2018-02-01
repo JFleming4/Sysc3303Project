@@ -12,6 +12,7 @@ import exceptions.InvalidPacketException;
  * Representation of a TFTP Request Message
  */
 public class RequestMessage extends Message {
+    public static final String DEFAULT_MODE = "netascii";
     private MessageType type;
     private String fileName;
     private String mode;
@@ -28,6 +29,15 @@ public class RequestMessage extends Message {
         this.type = type;
         this.fileName = fileName;
         this.mode = mode;
+    }
+
+    /**
+     * Create a DataPacket object. Throws an exception if type is null. Uses default mode.
+     * @param type The Request Type of the data
+     * @param fileName The file name
+     */
+    public RequestMessage(MessageType type, String fileName) {
+        this(type, fileName, DEFAULT_MODE);
     }
 
     @Override

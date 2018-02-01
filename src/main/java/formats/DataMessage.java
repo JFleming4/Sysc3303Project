@@ -18,7 +18,7 @@ public class DataMessage extends Message{
     private int blockNum;
     private byte[] data;
     private SocketAddress socketAddress;
-    private static final int MAX_BLOCK_SIZE = 512;
+    public static final int MAX_BLOCK_SIZE = 512;
 
     /**
      * Create a data message.
@@ -74,6 +74,14 @@ public class DataMessage extends Message{
         return Arrays.copyOf(data, data.length);
     }
 
+    /**
+     * @return The size of the data block, without having to call getData (expensive call)
+     */
+    public int getDataSize()
+    {
+        return this.data.length;
+    }
+
     @Override
     protected byte[] getBytes() throws IOException {
         ByteArrayOutputStream bAOS = new ByteArrayOutputStream();
@@ -117,7 +125,6 @@ public class DataMessage extends Message{
     /**
      * Creates a DataMessage object from a packet object
      * @param packet The packet object containing the data to be parsed
-     * @param socketAddress The socket address of the sender
      * @return The DataMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */

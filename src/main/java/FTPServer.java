@@ -5,11 +5,13 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
+import formats.Message;
 import formats.RequestMessage;
 import logging.Logger;
 import resources.ResourceManager;
@@ -22,15 +24,16 @@ import socket.TFTPDatagramSocket;
 
 public class FTPServer extends Thread {
 	private static final int SERVER_PORT = 69;
-	private static final int BUFF_HEADER_SIZE = 516;
 	public static final String RESOURCE_DIR = "server";
 	private static final Logger LOG = new Logger("FTPServer");
 	private DatagramSocket connection;
 	private List<ServerWorker> serverWorkers;
+	private long currentWorkerId;
 
 	public FTPServer() throws SocketException {
 		connection = new DatagramSocket(SERVER_PORT);
 		serverWorkers = new ArrayList<>();
+		currentWorkerId = 1;
 	}
 
 	/**
@@ -80,7 +83,7 @@ public class FTPServer extends Thread {
 	{
 		while(!connection.isClosed())
 		{
-			DatagramPacket receivedPacket = new DatagramPacket(new byte[BUFF_HEADER_SIZE], BUFF_HEADER_SIZE);
+			DatagramPacket receivedPacket = new DatagramPacket(new byte[Message.MAX_PACKET_SIZE], Message.MAX_PACKET_SIZE);
 
 			try {
 				// We want to remove any workers that have completed their task
@@ -90,7 +93,7 @@ public class FTPServer extends Thread {
 
 				// Create and start the worker thread that will handle the request
 				LOG.logVerbose("Dispatching Server worker thread.");
-				ServerWorker worker = new ServerWorker(receivedPacket);
+				ServerWorker worker = new ServerWorker(currentWorkerId++, receivedPacket);
 				worker.start();
 
 				// Add worker thread to our listing
@@ -130,6 +133,8 @@ public class FTPServer extends Thread {
 			while (runServer) {
 				System.out.print(">> ");
 				String command = input.nextLine();
+				if(command.trim().isEmpty())
+				    continue;
 
 				switch (command.toLowerCase())
 				{
@@ -163,7 +168,10 @@ public class FTPServer extends Thread {
 			e.printStackTrace();
 		} catch (InterruptedException iE) {
 			// No need to worry about this
-		}
+		} catch (NoSuchElementException nSEE) {
+		    // Scanner throws this when a line is empty and the application quits
+            // No need to worry about this
+        }
 	}
 }
 
@@ -173,9 +181,13 @@ class ServerWorker extends Thread {
 	private DatagramPacket packet;
 	private ResourceManager resourceManager;
 
-	public ServerWorker(DatagramPacket p) throws SocketException {
+	public ServerWorker(long workerId, DatagramPacket p) throws SocketException {
+	    // Include Worker ID in Log Tag
+	    LOG.setComponentName("ServerWorker-" + workerId);
+
 		this.packet = p;
 		this.resourceManager = new ResourceManager(FTPServer.RESOURCE_DIR);
+		LOG.logVerbose("Resource Path for request: " + this.resourceManager.getFullPath());
 	}
 
 	@Override
@@ -187,7 +199,7 @@ class ServerWorker extends Thread {
 
 			// Parse data into a DAO that is accessible
 			RequestMessage receivedMessage = RequestMessage.parseDataFromPacket(this.packet);
-
+            LOG.logVerbose("Client Information: " + this.packet.getSocketAddress().toString());
 			LOG.logVerbose("File Name: " + receivedMessage.getFileName());
 			LOG.logVerbose("Mode: " + receivedMessage.getMode());
 
@@ -195,9 +207,11 @@ class ServerWorker extends Thread {
 			switch (receivedMessage.getMessageType())
 			{
 				case RRQ:
+				    LOG.logQuiet("Received Read Request");
 					readRequest(receivedMessage);
 					break;
 				case WRQ:
+                    LOG.logQuiet("Received Write Request");
 					writeRequest(receivedMessage);
 					break;
 				default:
@@ -219,6 +233,8 @@ class ServerWorker extends Thread {
 			ioE.printStackTrace();
 		}
 
+		LOG.logQuiet("Successfully handled request");
+		LOG.logVerbose("Shutting down this instance of ServerWorker.");
 		socket.close();
 	}
 
@@ -247,26 +263,43 @@ class ServerWorker extends Thread {
 	 * @throws IOException
 	 */
 	private void writeRequest(RequestMessage message) throws IOException {
-
 		// According to TFTP protocol, a WRQ is acknowledged by an ACK or ERROR packet.
 		// A WRQ ACK will always have a block number of zero
         int expBlockNum = 0;
         String fileName = message.getFileName();
-		socket.sendAck(expBlockNum++,packet.getSocketAddress());
-		for(;;) {
-            LOG.logVerbose("Waiting to receive Block");
-            DataMessage dataMessage;
-            try {
-                dataMessage = socket.receiveData();
-                // Initialize block number to one sent from server
-                if(dataMessage.getBlockNum() != expBlockNum) throw new Error("Unexpected Block Number");
 
+        // WRQ Ack
+        AckMessage ackMessage = new AckMessage(expBlockNum++);
+		socket.sendMessage(ackMessage, packet.getSocketAddress());
+        LOG.logVerbose("WRQ Acknowledgment sent.");
+        LOG.logVerbose("Waiting for data messages.");
+
+		for(;;) {
+
+
+            try {
+
+                // Wait for more data
+                DatagramPacket recv = socket.receiveMessage();
+                DataMessage dataMessage = DataMessage.parseDataFromPacket(recv);
+                LOG.logVerbose("Received Data block. Block Number: " + dataMessage.getBlockNum() + ", Block Size: "
+                        + dataMessage.getDataSize() + ", Final Block: " + dataMessage.isFinalBlock());
+
+                // Check to see if received block number is the expected block number
+                if(dataMessage.getBlockNum() != expBlockNum)
+                    throw new IOException("Unexpected Block Number");
+
+                // Write data to file
                 resourceManager.writeBytesToFile(fileName, dataMessage.getData());
 
                 // Update Block number and send
-                socket.sendAck(expBlockNum++, dataMessage.getSocketAddress());
+                AckMessage ackMsg = new AckMessage(expBlockNum++);
+                socket.sendMessage(ackMsg, recv.getSocketAddress());
 
-                if(dataMessage.getData().length < socket.BUFF_HEADER_SIZE - 4) {
+                LOG.logVerbose("Sending Data Ack. Block Number: " + ackMsg.getBlockNum());
+
+                // Check to see if its the last data block
+                if(dataMessage.isFinalBlock()) {
                     LOG.logVerbose("End of read file reached");
                     break;
                 }
@@ -281,29 +314,38 @@ class ServerWorker extends Thread {
 
 
 
-	   /**
+    /**
      * Sends an array of bytes over TFTP, splicing the data in blocks if necessary
      * @param data The array of data
-     * @param socketAddress The Socket address used in sending packet
      * @throws IOException
      */
     private void sendDataBlock(byte[] data) throws IOException {
 
         // Create a sequence of data for the byte array
         List<DataMessage> messages = DataMessage.createDataMessageSequence(data);
+        LOG.logVerbose("Sending " + messages.size() + " Data messages to " + packet.getSocketAddress());
 
-        // Send each data block sequentially
-        for(DataMessage m : messages) {
-            socket.sendMessage(m, packet.getSocketAddress());
-            AckMessage ack;
-            try {
-                ack = socket.receiveAck();
+        try {
+            // Send each data block sequentially
+            for(DataMessage m : messages) {
+
+                LOG.logVerbose("Block: " + m.getBlockNum() + ", Data size: " + m.getDataSize() + ", Final Block: " + m.isFinalBlock());
+
+                // Send Data block message
+                socket.sendMessage(m, packet.getSocketAddress());
+
+                // Wait for Ack message before continuing
+                DatagramPacket packet = socket.receiveMessage();
+                AckMessage ack = AckMessage.parseDataFromPacket(packet);
+                LOG.logVerbose("Ack Received: " + ack.getBlockNum());
+
                 if(ack.getBlockNum() != m.getBlockNum()) {
-                    throw new IOException("Invalid Block Number");
+                    throw new InvalidPacketException("Invalid Block Number");
                 }
-            } catch (InvalidPacketException e) {
-                e.printStackTrace();
             }
+        } catch (InvalidPacketException e) {
+            e.printStackTrace();
+            throw new IOException("Failed to parse Ack Message", e);
         }
     }
 }

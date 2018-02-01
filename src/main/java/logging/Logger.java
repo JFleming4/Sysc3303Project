@@ -26,6 +26,22 @@ public class Logger {
 
     // Global log level across all loggers
     private static LogLevel currentLogLevel = LogLevel.QUIET;
+
+    /**
+     * Gets the Component name
+     */
+    public synchronized String getComponentName() {
+        return componentName;
+    }
+
+    /**
+     * Sets Component name
+     * @param componentName The new component name
+     */
+    public synchronized void setComponentName(String componentName) {
+        this.componentName = componentName;
+    }
+
     private String componentName;
 
     /**

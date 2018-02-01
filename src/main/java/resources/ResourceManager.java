@@ -45,6 +45,14 @@ public class ResourceManager {
 	    return fileBytes;
 	}
 
+    /**
+     * @return the full path of the resource directory.
+     */
+	public synchronized String getFullPath()
+	{
+		return directory.toAbsolutePath().toString();
+	}
+
 	/**
 	 * Check if a file exists in the resource directory
 	 * @param filename name of file to check
