@@ -55,7 +55,7 @@ public class WriteCommand extends SocketCommand {
 
                     // Wait for WRQ ack
                     DatagramPacket recv = socket.receiveMessage();
-                    AckMessage ack = AckMessage.parseDataFromPacket(recv);
+                    AckMessage ack = AckMessage.parseMessageFromPacket(recv);
                     LOG.logVerbose("Received WRQ ACK");
 
                     if(ack.getBlockNum() != 0) throw new IOException("Incorrect Initial Block Number");
@@ -101,7 +101,7 @@ public class WriteCommand extends SocketCommand {
 
                 // Wait for Ack message before continuing
                 DatagramPacket packet = socket.receiveMessage();
-                AckMessage ack = AckMessage.parseDataFromPacket(packet);
+                AckMessage ack = AckMessage.parseMessageFromPacket(packet);
                 LOG.logVerbose("Ack Received: " + ack.getBlockNum());
 
                 if(ack.getBlockNum() != m.getBlockNum()) {

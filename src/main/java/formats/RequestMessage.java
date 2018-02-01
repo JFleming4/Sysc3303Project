@@ -19,7 +19,7 @@ public class RequestMessage extends Message {
 
     /**
      * Create a DataPacket object. Throws an exception if type is null
-     * @param type The Request Type of the data
+     * @param type The Request Type of the data (must be MessageType.RRQ or WWQ)
      * @param fileName The file name
      * @param mode The mode
      */
@@ -77,13 +77,34 @@ public class RequestMessage extends Message {
     }
 
     /**
+     * Check if two RequestMessage objects are equal to each other
+     * @param other The other RequestMessage
+     * @return True if the objects are equals
+     */
+    @Override
+    public boolean equals(Object other)
+    {
+        if (this == other)
+            return true;
+
+        if(!(other instanceof RequestMessage))
+            return false;
+
+        RequestMessage otherMsg = (RequestMessage) other;
+
+        return this.getMessageType().equals(otherMsg.getMessageType())
+                && this.fileName.equals(otherMsg.fileName)
+                && this.mode.equals(otherMsg.mode);
+    }
+
+    /**
      * Creates a RequestMessage object from a packet object
      * @param packet The packet object containing the data to be parsed
      * @return The RequestMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static RequestMessage parseDataFromPacket(DatagramPacket packet) throws InvalidPacketException {
-        return parseDataFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
+    public static RequestMessage parseMessageFromPacket(DatagramPacket packet) throws InvalidPacketException {
+        return parseMessageFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
     }
 
     /**
@@ -92,10 +113,10 @@ public class RequestMessage extends Message {
      * @return The RequestMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static RequestMessage parseDataFromBytes(byte[] packet) throws InvalidPacketException {
-        // A minimum size of 6 assumes that the packet contains at least
-        // one character for the filename and at least one character for the mode
-        if (packet.length < 6)
+    public static RequestMessage parseMessageFromBytes(byte[] packet) throws InvalidPacketException {
+        // A minimum size of 4 assumes that the packet contains the two byte opcode, and two zeros (one
+        // for terminating file name, and one for terminating mode - where file name and mode are empty)
+        if (packet.length < 4)
             throw new InvalidPacketException("Packet length too short");
 
         // Used as a pointer to iterate through the byte array

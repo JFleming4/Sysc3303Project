@@ -51,7 +51,7 @@ public class ReadCommand extends SocketCommand {
 					try {
 					    // Receive read data from server
                         DatagramPacket recv = socket.receiveMessage();
-                        DataMessage dataMessage = DataMessage.parseDataFromPacket(recv);
+                        DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                         LOG.logVerbose("Received data block: " + dataMessage.getBlockNum());
             
                         // Initialize block number to one sent from server

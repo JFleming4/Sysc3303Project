@@ -61,13 +61,31 @@ public class AckMessage extends Message {
     }
 
     /**
+     * Check if two AckMessage objects are equal to each other
+     * @param other The other AckMessage
+     * @return True if the objects are equals
+     */
+    @Override
+    public boolean equals(Object other)
+    {
+        if (this == other)
+            return true;
+
+        if(!(other instanceof AckMessage))
+            return false;
+
+        AckMessage otherAck = (AckMessage) other;
+        return this.getMessageType().equals(otherAck.getMessageType()) && this.blockNum == otherAck.blockNum;
+    }
+
+    /**
      * Creates a AckMessage object from a packet object
      * @param packet The packet object containing the data to be parsed
      * @return The AckMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static AckMessage parseDataFromPacket(DatagramPacket packet) throws InvalidPacketException {
-        return parseDataFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
+    public static AckMessage parseMessageFromPacket(DatagramPacket packet) throws InvalidPacketException {
+        return parseMessageFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
     }
 
     /**
@@ -76,7 +94,7 @@ public class AckMessage extends Message {
      * @return The AckMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static AckMessage parseDataFromBytes(byte[] data) throws InvalidPacketException {
+    public static AckMessage parseMessageFromBytes(byte[] data) throws InvalidPacketException {
         // ACK has packet size of strictly 4
         if (data.length != 4)
             throw new InvalidPacketException("Invalid packet length");

@@ -198,8 +198,8 @@ class ServerWorker extends Thread {
 			socket = new TFTPDatagramSocket();
 
 			// Parse data into a DAO that is accessible
-			RequestMessage receivedMessage = RequestMessage.parseDataFromPacket(this.packet);
-            LOG.logVerbose("Client Information: " + this.packet.getSocketAddress().toString());
+			RequestMessage receivedMessage = RequestMessage.parseMessageFromPacket(this.packet);
+			LOG.logVerbose("Client Information: " + this.packet.getSocketAddress().toString());
 			LOG.logVerbose("File Name: " + receivedMessage.getFileName());
 			LOG.logVerbose("Mode: " + receivedMessage.getMode());
 
@@ -209,10 +209,12 @@ class ServerWorker extends Thread {
 				case RRQ:
 				    LOG.logQuiet("Received Read Request");
 					readRequest(receivedMessage);
+					LOG.logQuiet("Successfully handled RRQ");
 					break;
 				case WRQ:
                     LOG.logQuiet("Received Write Request");
 					writeRequest(receivedMessage);
+					LOG.logQuiet("Successfully handled WRQ");
 					break;
 				default:
 					raiseError();
@@ -232,10 +234,11 @@ class ServerWorker extends Thread {
 		{
 			ioE.printStackTrace();
 		}
-
-		LOG.logQuiet("Successfully handled request");
-		LOG.logVerbose("Shutting down this instance of ServerWorker.");
-		socket.close();
+		finally
+		{
+			LOG.logVerbose("Shutting down this instance of ServerWorker.");
+			socket.close();
+		}
 	}
 
 	private void raiseError() {
@@ -250,10 +253,9 @@ class ServerWorker extends Thread {
 		try {
 		    byte [] fileBytes = resourceManager.readFileToBytes(message.getFileName());
 		    sendDataBlock(fileBytes);
-		    socket.close();
 		} catch (FileNotFoundException e) {
-			System.out.println("File " + message.getFileName() + " Not Found");
-			socket.close();
+			LOG.logQuiet("Requested File: '" + message.getFileName() + "' Not Found");
+			throw new IOException("File not found exception thrown", e);
 		}
 	}
 
@@ -276,12 +278,11 @@ class ServerWorker extends Thread {
 
 		for(;;) {
 
-
             try {
 
                 // Wait for more data
                 DatagramPacket recv = socket.receiveMessage();
-                DataMessage dataMessage = DataMessage.parseDataFromPacket(recv);
+                DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                 LOG.logVerbose("Received Data block. Block Number: " + dataMessage.getBlockNum() + ", Block Size: "
                         + dataMessage.getDataSize() + ", Final Block: " + dataMessage.isFinalBlock());
 
@@ -305,11 +306,9 @@ class ServerWorker extends Thread {
                 }
             } catch (InvalidPacketException e) {
                 e.printStackTrace();
+                throw new IOException("Packet Exception occurred", e);
             }
         }
-		socket.close();
-
-
 	}
 
 
@@ -336,7 +335,7 @@ class ServerWorker extends Thread {
 
                 // Wait for Ack message before continuing
                 DatagramPacket packet = socket.receiveMessage();
-                AckMessage ack = AckMessage.parseDataFromPacket(packet);
+                AckMessage ack = AckMessage.parseMessageFromPacket(packet);
                 LOG.logVerbose("Ack Received: " + ack.getBlockNum());
 
                 if(ack.getBlockNum() != m.getBlockNum()) {

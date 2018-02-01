@@ -106,4 +106,45 @@ public class Logger {
         for (String s : lines)
             System.out.println("[" + componentName + "][" + level.name() +  "]: " + s);
     }
+
+    /**
+     * Logs a byte array to verbose output
+     * @param bytes The byte array to log
+     */
+    public synchronized void logVerbose(byte[] bytes)
+    {
+        logVerbose(getByteArrayString(bytes));
+    }
+
+    /**
+     * Logs a byte array to quiet output
+     * @param bytes The byte array to log
+     */
+    public synchronized void logQuiet(byte[] bytes)
+    {
+        logQuiet(getByteArrayString(bytes));
+    }
+
+    /**
+     * @param bytes The byte array to print
+     * @return A comma separated list of all bytes in the array
+     */
+    private synchronized String getByteArrayString(byte[] bytes)
+    {
+        StringBuilder byteStr = new StringBuilder("Byte Array: { ");
+
+        // Add individual bytes to the string
+        for(int i = 0; i < bytes.length; i++) {
+            byte b = bytes[i];
+            byteStr.append(String.format("0x%02X", b));
+
+            // Append separator
+            if(i != bytes.length - 1)
+                byteStr.append(", ");
+        }
+
+        byteStr.append(" }");
+
+        return byteStr.toString();
+    }
 }
