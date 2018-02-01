@@ -72,7 +72,7 @@ public class ReadCommand extends SocketCommand {
 
                         // Check if this was the last block
                         if(dataMessage.isFinalBlock()) {
-                            LOG.logVerbose("End of read file reached");
+                            LOG.logQuiet("End of read file reached");
                             break;
                         }
 
