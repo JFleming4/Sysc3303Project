@@ -1,3 +1,5 @@
+THIS FILE IS A SAMPLE FOR WRITING TO THE SERVER
+
 Here comes the sun (doo doo doo doo)
 Here comes the sun, and I say
 It's all right
@@ -25,3 +27,4 @@ Here comes the sun
 Here comes the sun, and I say
 It's all right
 It's all right
+

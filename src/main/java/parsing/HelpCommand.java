@@ -19,15 +19,15 @@ public class HelpCommand extends Command {
 		Command cmd;
 		
 		cmd = new ReadCommand(tokens);
-		System.out.println(cmd.toHelp());
+		System.out.println(">> " + cmd.toHelp());
 		
 		cmd = new WriteCommand(tokens);
-		System.out.println(cmd.toHelp());
+		System.out.println(">> " + cmd.toHelp());
 		
 		cmd = new HelpCommand(tokens);
-		System.out.println(cmd.toHelp());
+		System.out.println(">> " + cmd.toHelp());
 
 		cmd = new ExitCommand(tokens);
-		System.out.println(cmd.toHelp());
+		System.out.println(">> " + cmd.toHelp());
 	}
 }
