@@ -28,9 +28,10 @@ public class TFTPDatagramSocket extends DatagramSocket {
 	public void sendMessage(Message msg, SocketAddress socketAddress) throws IOException
 	{
 		byte[] data = msg.toByteArray();
+		DatagramPacket packet = new DatagramPacket(data, data.length, socketAddress);
 		LOG.logVerbose("Sending Message to " + socketAddress);
-		LOG.logVerbose(data);
-		send(new DatagramPacket(data, data.length, socketAddress));
+		LOG.logVerbose(packet);
+		send(packet);
 	}
 
 	/**
@@ -42,7 +43,7 @@ public class TFTPDatagramSocket extends DatagramSocket {
 		DatagramPacket packet = new DatagramPacket(new byte [Message.MAX_PACKET_SIZE], Message.MAX_PACKET_SIZE);
 		receive(packet);
 		LOG.logVerbose("Received data from " + packet.getSocketAddress());
-		LOG.logVerbose(packet.getData());
+		LOG.logVerbose(packet);
 		return packet;
 	}
 }

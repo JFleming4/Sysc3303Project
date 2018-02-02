@@ -138,7 +138,7 @@ public class FTPServer extends Thread {
 
 				switch (command.toLowerCase())
 				{
-					case "stop":
+					case "exit":
 						runServer = false;
 						server.stopServer();
 
@@ -154,7 +154,7 @@ public class FTPServer extends Thread {
 						Logger.setLogLevel(Logger.LogLevel.QUIET);
 						break;
 					case "help":
-						System.out.println("Commands:\n'stop' -> Shutdown the server\n'verbose' -> Enable verbose logging\n'quiet' -> Enable quiet logging");
+						System.out.println("Commands:\n'exit' -> Shutdown the server\n'verbose' -> Enable verbose logging\n'quiet' -> Enable quiet logging");
 						break;
 					default:
 						System.out.println("'" + command + "' is not a valid command.");
