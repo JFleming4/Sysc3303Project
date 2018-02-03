@@ -9,10 +9,11 @@ Noah Segal: 100911661
     - UCM and UML Diagrams
 Derek Stride: 100955939
     - FTPClient Iteration 0 + Testing
+    - ErrorSimulator
     - Simple Logger
 Michael Vezina: 100934579
     - Message Classes and Testing Suite
-    - Refactoring FTPServer and TFTPDatagramSocket
+    - Refactoring FTPServer, TFTPDatagramSocket, ErrorSimulator
 Irusha Vidanamadura: 100935300
     - Steady-state read/write data transfer and File I/O
     - TFTPDatagramSocket wrapper
@@ -23,10 +24,13 @@ To run the project you need to import the source files into eclipse and compile 
 
 To start the project run the class FTPServer, you can enter `help` into the command line interface to view the available options.
 
+[ Optional Step - Error Simulator ]
+Start the Error Simulator by running the class ErrorSimulator. This is REQUIRED to use the -t (test) option when sending requests from the client, otherwise the request will fail.
+
 Next, start the client by running the class FTPClient, again you can enter `help` into the command line interface to view the available options.
 
 Run the following commands to test reading and writing to the server. You can add the `-v` flag to enable verbose logging and
-`-t` to enable the error simulator for that transfer.
+`-t` to enable the error simulator for that transfer (the Error Simulator must be running - see the optional step above).
 
 read read-test.txt localhost
 write write-test.txt localhost
@@ -53,7 +57,7 @@ Project Structure
 /src/main/java/
     - FTPClient.java - The Java Client
     - FTPServer.java - The Java server
-    - components/ErrorSimulator.java - The Error Simulator created by Client
+    - components/ErrorSimulator.java - The Error Simulator
     - exceptions/ - projects specific exceptions for invalid packet and invalid commands
     - formats/ - All the message types that are involved in the TFTP protocol
     - logging/ - Simple logger

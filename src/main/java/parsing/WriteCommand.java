@@ -31,7 +31,7 @@ public class WriteCommand extends SocketCommand {
 	}
 
 	@Override
-	public void execute_operation() {
+	public void execute() {
         if(this.tokens.size() < 3) {
             LOG.logQuiet("Error: Not enough arguments");
         }
@@ -49,6 +49,7 @@ public class WriteCommand extends SocketCommand {
                     // Create the write request & send
                     RequestMessage wrqMessage = new RequestMessage(MessageType.WRQ ,this.getFilename());
                     socket.sendMessage(wrqMessage, this.getServerAddress());
+                    LOG.logQuiet("---- Begin File Transaction ---");
                     LOG.logQuiet("Write Request has been sent!");
 
 
@@ -61,6 +62,7 @@ public class WriteCommand extends SocketCommand {
 
                     sendDataBlock(resourceManager.readFileToBytes(this.getFilename()), recv.getSocketAddress());
                     LOG.logQuiet("Successfully completed write operation");
+                    LOG.logQuiet("---- End File Transaction ---");
                 } catch(InvalidPacketException ipE) {
                     LOG.logQuiet(ipE.getMessage());
                 } catch(UnknownHostException uHE) {

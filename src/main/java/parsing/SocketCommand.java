@@ -56,34 +56,6 @@ public abstract class SocketCommand extends Command {
 	public SocketCommand(String operation, List<String> tokens) {
 		super(operation, SOCKET_COMMAND_FORMAT, tokens);
 	}
-	
-	@Override
-	public void execute() {
-		ErrorSimulator sim = null;
-		if (isTest()) {
-			try {
-				sim = new ErrorSimulator(serverAddress(), isVerbose());
-				sim.start();
-			} catch (SocketException e) {
-				e.printStackTrace();
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		execute_operation();
-		
-		if (sim != null) {
-			sim.stopServer();
-			try {
-				sim.join();
-			} catch (InterruptedException e) {
-				// Ignored
-			}
-		}
-	}
-	
-	protected abstract void execute_operation();
 
 	public InetSocketAddress getServerAddress() throws UnknownHostException {
 		if (isTest())

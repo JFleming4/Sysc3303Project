@@ -1,5 +1,8 @@
 package logging;
 
+import exceptions.InvalidPacketException;
+import formats.*;
+
 import java.net.DatagramPacket;
 
 public class Logger {
@@ -133,7 +136,7 @@ public class Logger {
      */
     public synchronized void logVerbose(DatagramPacket packet)
     {
-        logVerbose(getByteArrayString(packet.getData(), 0, packet.getLength()));
+        logVerbose(getPacketString(packet));
     }
 
     /**
@@ -142,7 +145,97 @@ public class Logger {
      */
     public synchronized void logQuiet(DatagramPacket packet)
     {
-        logQuiet(getByteArrayString(packet.getData(), 0, packet.getLength()));
+        logQuiet(getPacketString(packet));
+    }
+
+    /**
+     * @param packet The packet to print
+     * @return A formatted string with packet data
+     */
+    private synchronized String getPacketString(DatagramPacket packet)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Packet Information:");
+        builder.append(System.lineSeparator());
+
+        builder.append("Packet Address: ");
+        builder.append(packet.getAddress());
+        builder.append(System.lineSeparator());
+
+        builder.append("Packet Port: ");
+        builder.append(packet.getPort());
+        builder.append(System.lineSeparator());
+
+        builder.append("Packet Type: ");
+
+        // Get packet type
+        if(packet.getData().length < 2) {
+            builder.append("INVALID");
+            return builder.toString();
+        }
+
+        Message.MessageType type = Message.MessageType.getMessageType((int)packet.getData()[1]);
+
+        if(type == null) {
+            builder.append("INVALID");
+            return builder.toString();
+        }
+        builder.append(type.name());
+        builder.append(System.lineSeparator());
+
+        builder.append("Message Data:");
+        builder.append(System.lineSeparator());
+
+        try{
+
+            // Print applicable data
+            if(Message.MessageType.isRequestType(type))
+            {
+                RequestMessage msg = RequestMessage.parseMessageFromPacket(packet);
+                builder.append("Packet File Name: ");
+                builder.append(msg.getFileName());
+                builder.append(System.lineSeparator());
+
+                builder.append("Packet File Name: ");
+                builder.append(msg.getMode());
+                builder.append(System.lineSeparator());
+            }
+            else if(type.equals(Message.MessageType.ACK))
+            {
+                AckMessage msg = AckMessage.parseMessageFromPacket(packet);
+                builder.append("Block Number: ");
+                builder.append(msg.getBlockNum());
+                builder.append(System.lineSeparator());
+            }
+            else if(type.equals(Message.MessageType.DATA))
+            {
+                DataMessage msg = DataMessage.parseMessageFromPacket(packet);
+                builder.append("Block Number: ");
+                builder.append(msg.getBlockNum());
+                builder.append(System.lineSeparator());
+
+                builder.append("Number of bytes of data: ");
+                builder.append(msg.getDataSize());
+                builder.append(System.lineSeparator());
+            }
+            else if(type.equals(Message.MessageType.ERROR))
+            {
+                ErrorMessage msg = ErrorMessage.parseMessageFromPacket(packet);
+                builder.append("Error Code: ");
+                builder.append(msg.getErrorType().getCode());
+                builder.append(System.lineSeparator());
+
+                builder.append("Error Message: ");
+                builder.append(msg.getMessage());
+                builder.append(System.lineSeparator());
+            }
+        }catch (InvalidPacketException iPE)
+        {
+            builder.append("Could Not Read Packet Data. Invalid Packet.");
+            return builder.toString();
+        }
+
+        return builder.toString();
     }
 
     /**

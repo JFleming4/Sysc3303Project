@@ -28,7 +28,7 @@ public class ReadCommand extends SocketCommand {
 	}
 
 	@Override
-	public void execute_operation() {
+	public void execute() {
 		if(this.tokens.size() < 3) {
 			LOG.logQuiet("Error: Not enough arguments");
 		}
@@ -45,6 +45,7 @@ public class ReadCommand extends SocketCommand {
 				// Set up + Send RRQ Message
                 RequestMessage rrqMessage = new RequestMessage(MessageType.RRQ ,this.getFilename());
 				socket.sendMessage(rrqMessage, this.getServerAddress());
+				LOG.logQuiet("---- Begin File Transaction ---");
                 LOG.logQuiet("Read request sent!");
                 LOG.logQuiet("Waiting to receive data");
 
@@ -76,6 +77,7 @@ public class ReadCommand extends SocketCommand {
                         if(dataMessage.isFinalBlock()) {
                             LOG.logVerbose("End of read file reached");
 							LOG.logQuiet("Successfully received file");
+							LOG.logQuiet("---- End File Transaction ---");
                             break;
                         }
 

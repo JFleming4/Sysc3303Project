@@ -114,7 +114,7 @@ public class FTPServer extends Thread {
 
 
 	public static void main(String[] args) {
-		Logger.setLogLevel(Logger.LogLevel.VERBOSE);
+
 		LOG.logQuiet("Starting Server");
 		LOG.logQuiet("Current Log Level: " + Logger.getLogLevel().name());
 
@@ -154,7 +154,7 @@ public class FTPServer extends Thread {
 						Logger.setLogLevel(Logger.LogLevel.QUIET);
 						break;
 					case "help":
-						System.out.println("Commands:\n'exit' -> Shutdown the server\n'verbose' -> Enable verbose logging\n'quiet' -> Enable quiet logging");
+					System.out.println("Commands:\n'exit' -> Shutdown the server\n'verbose' -> Enable verbose logging\n'quiet' -> Enable quiet logging");
 						break;
 					default:
 						System.out.println("'" + command + "' is not a valid command.");
