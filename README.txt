@@ -43,7 +43,7 @@ You can place files there and trying reading to the client folder or writing to 
 
 Diagrams:
 =====================
-The diagrams will be in /src/main/java/resources folder. They will contain
+The diagrams will be in resources folder. They will contain
 - UCM for Read File transfer
 - UCM for Write File transfer
 - UML Diagram
@@ -57,11 +57,12 @@ Project Structure
     - exceptions/ - projects specific exceptions for invalid packet and invalid commands
     - formats/ - All the message types that are involved in the TFTP protocol
     - logging/ - Simple logger
-    - parsing/ - FTPClient command line interface actions separated by command
-    - resources/client - The director where the client looks for reads/writes
-    - resources/server - The director where the server looks for reads/writes
-    - resources/diagrams - The Diagrams needed for iteration 1
-    - socket/TFTPDatagramSocket.java - A wrapper around DatagramSocket for ease of use
+    - parsing/ - FTPClient command line interface actions separated by command 
+    - socket/TFTPDatagramSocket.java - A wrapper around DatagramSocket for ease of use
+    - resources/ - contains class for file i/o
 /src/test/java/
     - formats/ - Message Testing suite
-    - parsing/ - Client Command tests
+    - parsing/ - Client Command tests
+/resources/client - The director where the client looks for reads/writes
+/resources/server - The director where the server looks for reads/writes
+/resources/diagrams - The Diagrams needed for iteration
