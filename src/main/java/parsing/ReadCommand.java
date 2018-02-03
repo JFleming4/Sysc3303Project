@@ -1,12 +1,15 @@
 package parsing;
 
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.UnknownHostException;
 import java.util.List;
 
 import exceptions.InvalidPacketException;
+import formats.AckMessage;
 import formats.DataMessage;
 import formats.Message.MessageType;
+import formats.RequestMessage;
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
@@ -25,46 +28,69 @@ public class ReadCommand extends SocketCommand {
 	}
 
 	@Override
-	public void execute() {
+	public void execute_operation() {
 		if(this.tokens.size() < 3) {
 			LOG.logQuiet("Error: Not enough arguments");
 		}
 		else {
-            ResourceManager resourceManager = new ResourceManager(RESOURCE_DIR);
+
 			int expBlockNum = -1;
 			try {
+				// Create the resource manager, handle IOException if failed to get resource directory
+				ResourceManager resourceManager = new ResourceManager(RESOURCE_DIR);
+
 			    socket = new TFTPDatagramSocket();
 				socket.setSoTimeout(SOCKET_TIMETOUT);
-				socket.sendRequest(MessageType.RRQ ,this.getFilename(), this.getServerAddress());
-				for(;;) {
-					LOG.logVerbose("Waiting to receive Block");
-					DataMessage dataMessage;
-                    try {
-                        dataMessage = socket.receiveData();
-                        // Initialize block number to one sent from server
-                        if(expBlockNum == -1) expBlockNum = dataMessage.getBlockNum();
-                        if(dataMessage.getBlockNum() != expBlockNum) throw new Error("Unexpected Block Number");
 
+				// Set up + Send RRQ Message
+                RequestMessage rrqMessage = new RequestMessage(MessageType.RRQ ,this.getFilename());
+				socket.sendMessage(rrqMessage, this.getServerAddress());
+                LOG.logQuiet("Read request sent!");
+                LOG.logQuiet("Waiting to receive data");
+
+				for(;;) {
+
+					try {
+					    // Receive read data from server
+                        DatagramPacket recv = socket.receiveMessage();
+                        DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
+                        LOG.logVerbose("Received data block: " + dataMessage.getBlockNum());
+            
+                        // Initialize block number to one sent from server
+                        if(expBlockNum == -1)
+                            expBlockNum = dataMessage.getBlockNum();
+
+                        // Confirm expected block number
+                        if(dataMessage.getBlockNum() != expBlockNum)
+                            throw new Error("Unexpected Block Number");
+
+                        // Write to file
                         resourceManager.writeBytesToFile(this.getFilename(), dataMessage.getData());
 
-                        if(dataMessage.getData().length < BUFF_HEADER_SIZE - 4) {
+                        // Send ACK and increment block num
+                        AckMessage ackMsg = new AckMessage(expBlockNum++);
+                        socket.sendMessage(ackMsg, recv.getSocketAddress());
+                        LOG.logVerbose("Sent Ack for block: " + ackMsg.getBlockNum());
+
+                        // Check if this was the last block
+                        if(dataMessage.isFinalBlock()) {
                             LOG.logVerbose("End of read file reached");
+							LOG.logQuiet("Successfully received file");
                             break;
                         }
 
-                        // Update Block number and send
-                        expBlockNum = dataMessage.getBlockNum() + 1;
-                        socket.sendAck(dataMessage.getBlockNum(), dataMessage.getSocketAddress());
                     } catch (InvalidPacketException e) {
                         e.printStackTrace();
                     }
 				}
 			} catch(UnknownHostException uHE) {
 				LOG.logQuiet("Error: Unknown Host Entered");
-			}catch(IOException ioE) {
+			} catch(IOException ioE) {
+				LOG.logVerbose("An IOException has occurred: " + ioE.getLocalizedMessage());
 				ioE.printStackTrace();
+			} finally {
+				socket.close();
 			}
-		    socket.close();
 		}
 	}
 }

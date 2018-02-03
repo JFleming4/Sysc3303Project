@@ -8,9 +8,10 @@ public class FTPClient {
 		Scanner sc = new Scanner(System.in);
 		Command command = null;
 		String input;
-
+		
+		System.out.println("Type 'help' for a list of commands");
+		
 		for (;;) {
-			System.out.print(">> ");
 			input = sc.nextLine();
 			command = Parser.parse(input.split(" "));
 			command.execute();

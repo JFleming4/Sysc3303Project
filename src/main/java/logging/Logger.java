@@ -1,5 +1,7 @@
 package logging;
 
+import java.net.DatagramPacket;
+
 public class Logger {
 
     // Enumeration for different types of log levels
@@ -26,6 +28,22 @@ public class Logger {
 
     // Global log level across all loggers
     private static LogLevel currentLogLevel = LogLevel.QUIET;
+
+    /**
+     * Gets the Component name
+     */
+    public synchronized String getComponentName() {
+        return componentName;
+    }
+
+    /**
+     * Sets Component name
+     * @param componentName The new component name
+     */
+    public synchronized void setComponentName(String componentName) {
+        this.componentName = componentName;
+    }
+
     private String componentName;
 
     /**
@@ -89,5 +107,66 @@ public class Logger {
 
         for (String s : lines)
             System.out.println("[" + componentName + "][" + level.name() +  "]: " + s);
+    }
+
+    /**
+     * Logs a byte array to verbose output
+     * @param bytes The byte array to log
+     */
+    public synchronized void logVerbose(byte[] bytes)
+    {
+        logVerbose(getByteArrayString(bytes, 0, bytes.length));
+    }
+
+    /**
+     * Logs a byte array to quiet output
+     * @param bytes The byte array to log
+     */
+    public synchronized void logQuiet(byte[] bytes)
+    {
+        logQuiet(getByteArrayString(bytes, 0, bytes.length));
+    }
+    
+    /**
+     * Logs a packet to verbose output
+     * @param packet The packet to log
+     */
+    public synchronized void logVerbose(DatagramPacket packet)
+    {
+        logVerbose(getByteArrayString(packet.getData(), 0, packet.getLength()));
+    }
+
+    /**
+     * Logs a packet to quiet output
+     * @param packet The packet to log
+     */
+    public synchronized void logQuiet(DatagramPacket packet)
+    {
+        logQuiet(getByteArrayString(packet.getData(), 0, packet.getLength()));
+    }
+
+    /**
+     * @param bytes The byte array to print
+     * @param offset the starting byte to print
+     * @param length the point at which to truncate printing if it's less than the length of bytes
+     * @return A comma separated list of all bytes in the array
+     */
+    private synchronized String getByteArrayString(byte[] bytes, int offset, int length)
+    {
+        StringBuilder byteStr = new StringBuilder("Byte Array: { ");
+
+        // Add individual bytes to the string
+        for(int i = offset; i < length; i++) {
+            byte b = bytes[i];
+            byteStr.append(String.format("0x%02X", b));
+
+            // Append separator
+            if(i != length - 1)
+                byteStr.append(", ");
+        }
+
+        byteStr.append(" }");
+
+        return byteStr.toString();
     }
 }

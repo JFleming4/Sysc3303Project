@@ -62,7 +62,7 @@ public class ErrorMessage extends Message {
         this.message = message;
     }
 
-    public ErrorType getType() {
+    public ErrorType getErrorType() {
         return type;
     }
 
@@ -87,6 +87,26 @@ public class ErrorMessage extends Message {
     @Override
     public MessageType getMessageType() {
         return MessageType.ERROR;
+    }
+
+    /**
+     * Check if two ErrorMessage objects are equal to each other
+     * @param other The other ErrorMessage
+     * @return True if the objects are equals
+     */
+    @Override
+    public boolean equals(Object other)
+    {
+        if (this == other)
+            return true;
+
+        if(!(other instanceof ErrorMessage))
+            return false;
+
+        ErrorMessage otherMsg = (ErrorMessage) other;
+        return this.getMessageType().equals(otherMsg.getMessageType())
+                && this.type.equals(otherMsg.type)
+                && this.message.equals(otherMsg.message);
     }
 
     /**

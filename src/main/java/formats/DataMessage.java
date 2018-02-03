@@ -3,7 +3,6 @@ package formats;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -17,33 +16,20 @@ public class DataMessage extends Message{
 
     private int blockNum;
     private byte[] data;
-    private SocketAddress socketAddress;
-    private static final int MAX_BLOCK_SIZE = 512;
+    public static final int MAX_BLOCK_SIZE = 512;
+    private static final int MAX_BLOCK_NUM = 0x0000FFFF;
 
     /**
-     * Create a data message.
+     * Create a data message object
      * @param blockNum The block number. Must be >= 1 otherwise a runtime exception will be thrown
      * @param data  The data to be included in the message. Maximum data size of 512 bytes. Will be truncated if necessary.
      */
     public DataMessage(int blockNum, byte[] data)
     {
-       this(blockNum, data, null);
-    }
-
-    /**
-     * Create a data message with socketAddress.
-     * @param blockNum The block number. Must be >= 1 otherwise a runtime exception will be thrown
-     * @param data  The data to be included in the message. Maximum data size of 512 bytes. Will be truncated if necessary.
-     * @param socketAddress The socket address of the sender
-     */
-    private DataMessage(int blockNum, byte[] data, SocketAddress socketAddress)
-    {
         if(blockNum < 1)
-            throw new RuntimeException("blockNum can not be less than 1");
-
+            throw new RuntimeException("blockNum can not be less than 1 (" + blockNum + ")");
         this.blockNum = blockNum;
         this.data = Arrays.copyOf(data, Math.min(data.length, MAX_BLOCK_SIZE));
-        this.socketAddress = socketAddress;
     }
 
     /**
@@ -51,13 +37,6 @@ public class DataMessage extends Message{
      */
     public int getBlockNum() {
         return blockNum;
-    }
-
-    /**
-     * @return The sender socket address
-     */
-    public SocketAddress getSocketAddress() {
-        return socketAddress;
     }
 
     /**
@@ -72,6 +51,14 @@ public class DataMessage extends Message{
      */
     public byte[] getData() {
         return Arrays.copyOf(data, data.length);
+    }
+
+    /**
+     * @return The size of the data block, without having to call getData (expensive call)
+     */
+    public int getDataSize()
+    {
+        return this.data.length;
     }
 
     @Override
@@ -92,14 +79,38 @@ public class DataMessage extends Message{
     }
 
     /**
+     * Check if two DataMessage objects are equal to each other
+     * @param other The other DataMessage
+     * @return True if the objects are equals
+     */
+    @Override
+    public boolean equals(Object other)
+    {
+        if (this == other)
+            return true;
+
+        if(!(other instanceof DataMessage))
+            return false;
+
+        DataMessage otherData = (DataMessage) other;
+        return this.getMessageType().equals(otherData.getMessageType())
+                && this.blockNum == otherData.blockNum
+                && Arrays.equals(this.data, otherData.data);
+    }
+
+    /**
      * Creates a listing of DataMessage objects that represent the byte array passed in
      * @param data The data to parse into a data message sequence
      * @return The sequence of data messages
      */
-    public static List<DataMessage> createDataMessageSequence(byte[] data)
+    public static List<DataMessage> createDataMessageSequence(byte[] data) throws IOException
     {
         // Calculate number of blocks needed
         int numBlocks = data.length / MAX_BLOCK_SIZE + 1;
+
+
+        if (numBlocks > MAX_BLOCK_NUM)
+            throw new IOException("The number of blocks needed to represent this data is too large. (" + numBlocks + ")");
 
         List<DataMessage> dataSequence = new ArrayList<>();
 
@@ -107,7 +118,7 @@ public class DataMessage extends Message{
         for(int i = 0; i < numBlocks; i++)
         {
             byte[] curBlock = Arrays.copyOfRange(data, i * MAX_BLOCK_SIZE, Math.min(i * MAX_BLOCK_SIZE + MAX_BLOCK_SIZE, data.length));
-            DataMessage msg = new DataMessage((short)(i + 1), curBlock);
+            DataMessage msg = new DataMessage(i + 1, curBlock);
             dataSequence.add(msg);
         }
 
@@ -117,22 +128,20 @@ public class DataMessage extends Message{
     /**
      * Creates a DataMessage object from a packet object
      * @param packet The packet object containing the data to be parsed
-     * @param socketAddress The socket address of the sender
      * @return The DataMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static DataMessage parseDataFromPacket(DatagramPacket packet) throws InvalidPacketException {
-        return parseDataFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()), packet.getSocketAddress());
+    public static DataMessage parseMessageFromPacket(DatagramPacket packet) throws InvalidPacketException {
+        return parseMessageFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
     }
 
     /**
      * Creates a DataMessage object from a byte array
      * @param data The Data retrieved in a packet
-     * @param socketAddress The socket address of the sender
      * @return The DataMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    private static DataMessage parseDataFromBytes(byte[] data, SocketAddress socketAddress) throws InvalidPacketException {
+    public static DataMessage parseMessageFromBytes(byte[] data) throws InvalidPacketException {
         // Data Messages have a minimum size of 4.
         if (data.length < 4)
             throw new InvalidPacketException("Packet length too short");
@@ -172,6 +181,6 @@ public class DataMessage extends Message{
         else
             sentData = Arrays.copyOfRange(data, ptr, data.length);
 
-        return new DataMessage(blockNum, sentData, socketAddress);
+        return new DataMessage(blockNum, sentData);
     }
 }

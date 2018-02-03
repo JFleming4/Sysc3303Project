@@ -8,7 +8,7 @@ import java.io.IOException;
 
 public abstract class Message {
     private final static Logger LOG = new Logger("Message");
-	public final int BUFF_HEADER_SIZE = 516;
+	public final static int MAX_PACKET_SIZE = 516;
 
     /**
      * Enumeration of TFTP message formats

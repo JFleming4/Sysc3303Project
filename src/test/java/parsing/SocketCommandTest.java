@@ -28,7 +28,10 @@ public class SocketCommandTest extends CommandTest {
 	@Test
 	public void testserverAddress() {
 		try {
-            assertEquals(new InetSocketAddress(SERVER_ADDRESS, SocketCommand.SERVER_ADDR_PORT), socketCmd.getServerAddress());
+			if (tokens.contains("-t") || tokens.contains("--test"))
+				assertEquals(new InetSocketAddress(SERVER_ADDRESS, SocketCommand.ERROR_PORT), socketCmd.getServerAddress());
+			else
+				assertEquals(new InetSocketAddress(SERVER_ADDRESS, SocketCommand.SERVER_ADDR_PORT), socketCmd.getServerAddress());
         } catch (UnknownHostException e) {
             fail(e.getMessage());
         }

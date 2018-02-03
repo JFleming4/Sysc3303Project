@@ -16,7 +16,7 @@ public class Parser {
 			cmd = new HelpCommand(tokens);
 			break;
 		default:
-			System.out.println("Invalid Command. See our valid commands below:");
+			System.out.println("'" + tokens[0] + "' is not a valid command.");
 			cmd = new HelpCommand(tokens);
 			break;
 		}
