@@ -63,6 +63,6 @@ Project Structure
 /src/test/java/
     - formats/ - Message Testing suite
     - parsing/ - Client Command tests
-/resources/client - The director where the client looks for reads/writes
-/resources/server - The director where the server looks for reads/writes
+/resources/client - The directory where the client looks for reads/writes
+/resources/server - The directory where the server looks for reads/writes
 /resources/diagrams - The Diagrams needed for iteration
