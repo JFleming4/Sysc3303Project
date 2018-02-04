@@ -6,7 +6,6 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.List;
 
-import components.ErrorSimulator;
 import logging.Logger;
 
 

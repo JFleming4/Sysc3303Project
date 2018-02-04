@@ -1,6 +1,9 @@
+build-maven:
+	mvn package
 run-server:
-	sudo java -cp target/classes FTPServer
-
+	java -cp target/classes FTPServer
+run-sim:
+	java -cp target/classes ErrorSimulator
 run-client:
-	sudo java -cp target/classes FTPClient
+	java -cp target/classes FTPClient
 
