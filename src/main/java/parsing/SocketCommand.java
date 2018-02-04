@@ -1,25 +1,22 @@
 package parsing;
 
+import logging.Logger;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.List;
 
-import logging.Logger;
+import static resources.Configuration.GLOBAL_CONFIG;
 
 
 public abstract class SocketCommand extends Command {
     private static final int FILENAME_IDX = 1;
     private static final int SERVER_ADDR_IDX = 2;
-    public static final int SERVER_ADDR_PORT = 69;
-    public static final int ERROR_PORT = 23;
     private static final String SOCKET_COMMAND_FORMAT = "FILENAME SERVER_ADDRESS [--verbose|-v] [--test|-t]";
-    protected static final int BUFF_HEADER_SIZE = 516;
-    protected static final String RESOURCE_DIR = "client";
-    protected static final int SOCKET_TIMETOUT = 5000;
+    protected static final int SOCKET_TIMEOUT = 5000;
 
-	private static enum Options {
+	private enum Options {
 		VERBOSE_LONG("--verbose"),
 		VERBOSE_SHORT("-v"),
 		TEST_LONG("--test"),
@@ -67,6 +64,9 @@ public abstract class SocketCommand extends Command {
 	}
 
 	public boolean isVerbose() {
+		if(GLOBAL_CONFIG.DEBUG_MODE)
+			return true;
+
 		for (String option : tokens) {
 			if (Options.isVerbose(option))
 				return true;
@@ -91,10 +91,10 @@ public abstract class SocketCommand extends Command {
 	}
 	
 	private InetSocketAddress errorSimulatorAddress() throws UnknownHostException {
-		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), ERROR_PORT);
+		return new InetSocketAddress(InetAddress.getLoopbackAddress(), GLOBAL_CONFIG.SIMULATOR_PORT);
 	}
 	
 	private InetSocketAddress serverAddress() throws UnknownHostException {
-		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), SERVER_ADDR_PORT);
+		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), GLOBAL_CONFIG.SERVER_PORT);
 	}
 }

@@ -1,6 +1,7 @@
 package parsing;
 
 import static org.junit.Assert.*;
+import static resources.Configuration.GLOBAL_CONFIG;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -29,9 +30,9 @@ public class SocketCommandTest extends CommandTest {
 	public void testserverAddress() {
 		try {
 			if (tokens.contains("-t") || tokens.contains("--test"))
-				assertEquals(new InetSocketAddress(SERVER_ADDRESS, SocketCommand.ERROR_PORT), socketCmd.getServerAddress());
+				assertEquals(new InetSocketAddress(SERVER_ADDRESS, GLOBAL_CONFIG.SIMULATOR_PORT), socketCmd.getServerAddress());
 			else
-				assertEquals(new InetSocketAddress(SERVER_ADDRESS, SocketCommand.SERVER_ADDR_PORT), socketCmd.getServerAddress());
+				assertEquals(new InetSocketAddress(SERVER_ADDRESS, GLOBAL_CONFIG.SERVER_PORT), socketCmd.getServerAddress());
         } catch (UnknownHostException e) {
             fail(e.getMessage());
         }

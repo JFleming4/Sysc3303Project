@@ -1,12 +1,15 @@
 package socket;
 
+import formats.Message;
+import logging.Logger;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
-import formats.Message;
-import logging.Logger;
 
 public class TFTPDatagramSocket extends DatagramSocket {
 	public final static Logger LOG = new Logger("TFTPDatagramSocket");
@@ -35,14 +38,34 @@ public class TFTPDatagramSocket extends DatagramSocket {
 	}
 
 	/**
+	 * Takes a packet with pre-existing data and forwards it to another host
+	 * @param clientPacket The packet to forward
+	 * @param address The address to forward the packet to
+	 * @param port The port to forward the packet to
+	 * @throws IOException
+	 */
+	public void forwardPacket(DatagramPacket clientPacket, InetAddress address, int port) throws IOException {
+		clientPacket.setAddress(address);
+		clientPacket.setPort(port);
+
+		LOG.logVerbose("Forwarding packet to address: " + address + ", Port: " + port);
+		LOG.logVerbose(clientPacket);
+		send(clientPacket);
+	}
+
+	public void forwardPacket(DatagramPacket clientPacket, InetSocketAddress address) throws IOException {
+		forwardPacket(clientPacket, address.getAddress(), address.getPort());
+	}
+
+	/**
 	 * Receives a TFTP message over the socket
 	 * @throws IOException
 	 */
-	public DatagramPacket receiveMessage() throws IOException
+	public DatagramPacket receivePacket() throws IOException
 	{
 		DatagramPacket packet = new DatagramPacket(new byte [Message.MAX_PACKET_SIZE], Message.MAX_PACKET_SIZE);
 		receive(packet);
-		LOG.logVerbose("Received data from " + packet.getSocketAddress());
+		LOG.logVerbose("Received Packet from " + packet.getSocketAddress());
 		LOG.logVerbose(packet);
 		return packet;
 	}

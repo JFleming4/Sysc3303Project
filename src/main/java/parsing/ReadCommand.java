@@ -1,10 +1,5 @@
 package parsing;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.UnknownHostException;
-import java.util.List;
-
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
@@ -13,6 +8,13 @@ import formats.RequestMessage;
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.UnknownHostException;
+import java.util.List;
+
+import static resources.Configuration.GLOBAL_CONFIG;
 
 public class ReadCommand extends SocketCommand {
 	private static final Logger LOG = new Logger("FTPClient - Read");
@@ -37,10 +39,10 @@ public class ReadCommand extends SocketCommand {
 			int expBlockNum = -1;
 			try {
 				// Create the resource manager, handle IOException if failed to get resource directory
-				ResourceManager resourceManager = new ResourceManager(RESOURCE_DIR);
+				ResourceManager resourceManager = new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR);
 
 			    socket = new TFTPDatagramSocket();
-				socket.setSoTimeout(SOCKET_TIMETOUT);
+				socket.setSoTimeout(SOCKET_TIMEOUT);
 
 				// Set up + Send RRQ Message
                 RequestMessage rrqMessage = new RequestMessage(MessageType.RRQ ,this.getFilename());
@@ -53,7 +55,7 @@ public class ReadCommand extends SocketCommand {
 
 					try {
 					    // Receive read data from server
-                        DatagramPacket recv = socket.receiveMessage();
+                        DatagramPacket recv = socket.receivePacket();
                         DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                         LOG.logVerbose("Received data block: " + dataMessage.getBlockNum());
             

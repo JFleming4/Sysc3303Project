@@ -1,48 +1,35 @@
+import formats.Message;
+import logging.Logger;
+import socket.TFTPDatagramSocket;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-import logging.Logger;
+import static resources.Configuration.GLOBAL_CONFIG;
 
 public class ErrorSimulator extends Thread {
-	private DatagramSocket connection;
+	private TFTPDatagramSocket connection;
 	private InetAddress serverAddress;
 	private InetSocketAddress clientAddress;
-
-	private static final int ERROR_PORT = 23;
-	private static final int SERVER_PORT = 69;
-	private static final int BUFF_HEADER_SIZE = 516;
 	private int currentServerWorkerPort;
 	private static final Logger LOG = new Logger("ErrorSimulator");
 
 	public ErrorSimulator(InetAddress serverAddress) throws SocketException {
-		this.connection = new DatagramSocket(ERROR_PORT);
+
+		this.connection = new TFTPDatagramSocket(GLOBAL_CONFIG.SIMULATOR_PORT);
 		this.serverAddress = serverAddress;
 
-		LOG.logQuiet("Listening on port " + ERROR_PORT);
+		LOG.logQuiet("Listening on port " + connection.getLocalPort());
 		LOG.logQuiet("Server Address: " + serverAddress);
 	}
 
-	public void forwardPacket(DatagramPacket clientPacket, InetAddress address, int port) throws IOException {
-		DatagramPacket sendPacket = new DatagramPacket(
-				clientPacket.getData(),
-				clientPacket.getLength(),
-				address,
-				port);
-
-		LOG.logVerbose("Sending packet to address: " + address + ", Port: " + port);
-		LOG.logVerbose(sendPacket);
-		connection.send(sendPacket);
-	}
-
-	public void forwardPacket(DatagramPacket clientPacket, InetSocketAddress address) throws IOException {
-		forwardPacket(clientPacket, address.getAddress(), address.getPort());
-	}
-
 	public DatagramPacket receivePacket() throws IOException {
-		DatagramPacket clientPacket = new DatagramPacket(new byte[BUFF_HEADER_SIZE], BUFF_HEADER_SIZE);
+		DatagramPacket clientPacket = new DatagramPacket(new byte[Message.MAX_PACKET_SIZE], Message.MAX_PACKET_SIZE);
 		connection.receive(clientPacket);
 		LOG.logVerbose("Received Message Packet from " + clientPacket.getSocketAddress());
 		LOG.logVerbose(clientPacket);
@@ -97,7 +84,7 @@ public class ErrorSimulator extends Thread {
 					clientAddress = new InetSocketAddress(incomingPacket.getAddress(), incomingPacket.getPort());
 
 					LOG.logQuiet("Forwarding initial request to server");
-					forwardPacket(incomingPacket, serverAddress, SERVER_PORT);
+					connection.forwardPacket(incomingPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
 
 					LOG.logVerbose("Waiting for initial response from server");
 					DatagramPacket serverResponsePacket = receivePacket();
@@ -107,7 +94,7 @@ public class ErrorSimulator extends Thread {
 					LOG.logVerbose("Received server response. Worker thread port: " + currentServerWorkerPort);
 
 					// Now forward the initial response back to client
-					forwardPacket(serverResponsePacket, clientAddress);
+					connection.forwardPacket(serverResponsePacket, clientAddress);
 					LOG.logQuiet("Forwarding initial response to client");
 				}
 				// If the packet is from the server worker
@@ -115,14 +102,14 @@ public class ErrorSimulator extends Thread {
 				else if(!isFromClient(incomingAddr, incomingPort) && isFromServerWorker(incomingAddr, incomingPort))
 				{
 					LOG.logQuiet("Received message from client. Forwarding to server.");
-					forwardPacket(incomingPacket, clientAddress);
+					connection.forwardPacket(incomingPacket, clientAddress);
 				}
 				// If the packet is from the current client
 				// We are going to forward the packet to the server
 				else if(!isFromServerWorker(incomingAddr, incomingPort) && isFromClient(incomingAddr, incomingPort))
 				{
 					LOG.logQuiet("Received message from server. Forwarding to client.");
-					forwardPacket(incomingPacket, serverAddress, currentServerWorkerPort);
+					connection.forwardPacket(incomingPacket, serverAddress, currentServerWorkerPort);
 				}
 
 			} catch (SocketException sE)
@@ -144,7 +131,7 @@ public class ErrorSimulator extends Thread {
 		System.out.println("Command Line Arguments:");
 		System.out.println("ErrorSimulator [-s server_ip] [-v]");
 		System.out.println("\t[-h]: Shows Help page");
-		System.out.println("\t[-s server_address]: Where server_address is the server's IP Address. Default is localhost. Port: " + SERVER_PORT);
+		System.out.println("\t[-s server_address]: Where server_address is the server's IP Address. Default is localhost. Port: " + GLOBAL_CONFIG.SERVER_PORT);
 		System.out.println("\t[-v]: Sets logging to verbose");
 	}
 
@@ -177,7 +164,7 @@ public class ErrorSimulator extends Thread {
 		}
 
 		// Create address out of parameter value
-		return new InetSocketAddress(args[optionIndex + 1], SERVER_PORT).getAddress();
+		return new InetSocketAddress(args[optionIndex + 1], GLOBAL_CONFIG.SERVER_PORT).getAddress();
 	}
 
 	/**
@@ -188,7 +175,7 @@ public class ErrorSimulator extends Thread {
 		if(args == null || args.length < 1)
 			return -1;
 
-		// Iterate through arguments to get -v option
+		// Iterate through arguments to get option index
 		for (int i = 0; i < args.length; i++) {
 
 			if (args[i].equalsIgnoreCase("-" + option)) {
@@ -212,6 +199,10 @@ public class ErrorSimulator extends Thread {
 		// Set verbosity
 		Logger.LogLevel level = getOption(args, 'v') > -1 ? Logger.LogLevel.VERBOSE : Logger.LogLevel.QUIET;
 		Logger.setLogLevel(level);
+
+		// Override log level to VERBOSE on debug mode
+		if(GLOBAL_CONFIG.DEBUG_MODE)
+			Logger.setLogLevel(Logger.LogLevel.VERBOSE);
 
 		LOG.logQuiet("Current Log Level: " + Logger.getLogLevel().name());
 

@@ -1,13 +1,3 @@
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
-
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
@@ -17,21 +7,31 @@ import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
+
+import static resources.Configuration.GLOBAL_CONFIG;
 
 /**
  * Represents a TFTP server
  */
 
 public class FTPServer extends Thread {
-	private static final int SERVER_PORT = 69;
-	public static final String RESOURCE_DIR = "server";
 	private static final Logger LOG = new Logger("FTPServer");
 	private DatagramSocket connection;
 	private List<ServerWorker> serverWorkers;
 	private long currentWorkerId;
 
 	public FTPServer() throws SocketException {
-		connection = new DatagramSocket(SERVER_PORT);
+		connection = new DatagramSocket(GLOBAL_CONFIG.SERVER_PORT);
 		serverWorkers = new ArrayList<>();
 		currentWorkerId = 1;
 	}
@@ -39,8 +39,16 @@ public class FTPServer extends Thread {
 	/**
 	 * @return the server address
 	 */
-	public String getServerAddress() {
-		return connection.getLocalAddress().toString();
+	public InetAddress getAddress() {
+		return connection.getLocalAddress();
+	}
+
+	/**
+	 * @return the server port
+	 */
+	public int getPort()
+	{
+		return this.connection.getLocalPort();
 	}
 
 	/**
@@ -115,14 +123,17 @@ public class FTPServer extends Thread {
 
 	public static void main(String[] args) {
 
+		// Set VERBOSE on debug mode
+		if(GLOBAL_CONFIG.DEBUG_MODE)
+			Logger.setLogLevel(Logger.LogLevel.VERBOSE);
+
 		LOG.logQuiet("Starting Server");
 		LOG.logQuiet("Current Log Level: " + Logger.getLogLevel().name());
-
 
 		try {
 			// Create and start the server thread
 			FTPServer server = new FTPServer();
-			LOG.logVerbose("Server Listening at: " + server.getServerAddress() +":" + SERVER_PORT);
+			LOG.logVerbose("Server Listening at: " + server.getAddress() +":" + server.getPort());
 			server.start();
 
 			boolean runServer = true;
@@ -186,7 +197,7 @@ class ServerWorker extends Thread {
 	    LOG.setComponentName("ServerWorker-" + workerId);
 
 		this.packet = p;
-		this.resourceManager = new ResourceManager(FTPServer.RESOURCE_DIR);
+		this.resourceManager = new ResourceManager(GLOBAL_CONFIG.SERVER_RESOURCE_DIR);
 		LOG.logVerbose("Resource Path for request: " + this.resourceManager.getFullPath());
 	}
 
@@ -281,7 +292,7 @@ class ServerWorker extends Thread {
             try {
 
                 // Wait for more data
-                DatagramPacket recv = socket.receiveMessage();
+                DatagramPacket recv = socket.receivePacket();
                 DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                 LOG.logVerbose("Received Data block. Block Number: " + dataMessage.getBlockNum() + ", Block Size: "
                         + dataMessage.getDataSize() + ", Final Block: " + dataMessage.isFinalBlock());
@@ -334,7 +345,7 @@ class ServerWorker extends Thread {
                 socket.sendMessage(m, packet.getSocketAddress());
 
                 // Wait for Ack message before continuing
-                DatagramPacket packet = socket.receiveMessage();
+                DatagramPacket packet = socket.receivePacket();
                 AckMessage ack = AckMessage.parseMessageFromPacket(packet);
                 LOG.logVerbose("Ack Received: " + ack.getBlockNum());
 

@@ -1,13 +1,5 @@
 package parsing;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.List;
-
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
@@ -16,6 +8,16 @@ import formats.RequestMessage;
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.List;
+
+import static resources.Configuration.GLOBAL_CONFIG;
 
 public class WriteCommand extends SocketCommand {
     private static final Logger LOG = new Logger("FTPClient - Write");
@@ -37,12 +39,12 @@ public class WriteCommand extends SocketCommand {
         }
         else {
             try {
-                ResourceManager resourceManager = new ResourceManager(RESOURCE_DIR);
+                ResourceManager resourceManager = new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR);
                 if(!resourceManager.fileExists(this.getFilename()))
                     throw new FileNotFoundException("File Not Found");
 
                 socket = new TFTPDatagramSocket();
-                socket.setSoTimeout(SOCKET_TIMETOUT);
+                socket.setSoTimeout(SOCKET_TIMEOUT);
 
                 try {
 
@@ -54,7 +56,7 @@ public class WriteCommand extends SocketCommand {
 
 
                     // Wait for WRQ ack
-                    DatagramPacket recv = socket.receiveMessage();
+                    DatagramPacket recv = socket.receivePacket();
                     AckMessage ack = AckMessage.parseMessageFromPacket(recv);
                     LOG.logVerbose("Received WRQ ACK");
 
@@ -103,7 +105,7 @@ public class WriteCommand extends SocketCommand {
                 socket.sendMessage(m, socketAddress);
 
                 // Wait for Ack message before continuing
-                DatagramPacket packet = socket.receiveMessage();
+                DatagramPacket packet = socket.receivePacket();
                 AckMessage ack = AckMessage.parseMessageFromPacket(packet);
                 LOG.logVerbose("Ack Received: " + ack.getBlockNum());
 

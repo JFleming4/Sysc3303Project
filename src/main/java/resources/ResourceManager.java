@@ -48,6 +48,16 @@ public class ResourceManager {
 	    return fileBytes;
 	}
 
+	/**
+	 *
+	 * @param filename The name of the file to read from
+	 * @return bytes read from file
+	 * @throws IOException
+	 */
+	public synchronized String readFileToString(String filename) throws IOException {
+		return new String(readFileToBytes(filename));
+	}
+
     /**
      * @return the full path of the resource directory.
      */
