@@ -1,7 +1,5 @@
 package parsing;
 
-import logging.Logger;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -80,14 +78,6 @@ public abstract class SocketCommand extends Command {
 				return true;
 		}
 		return false;
-	}
-	
-	@Override
-	protected void setLogLevel() {
-		if (isVerbose())
-			Logger.setLogLevel(Logger.LogLevel.VERBOSE);
-		else
-			Logger.setLogLevel(Logger.LogLevel.QUIET);
 	}
 	
 	private InetSocketAddress errorSimulatorAddress() throws UnknownHostException {
