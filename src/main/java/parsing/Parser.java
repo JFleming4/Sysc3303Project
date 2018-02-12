@@ -1,4 +1,7 @@
 package parsing;
+
+import parsing.Command;
+
 public class Parser {
 	public static Command parse(String[] tokens) {
 		Command cmd;

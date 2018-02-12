@@ -12,8 +12,8 @@ public class InputState extends State {
 		
 		Scanner sc = new Scanner(System.in);
 		String input = sc.nextLine();
-		sc.close();
 		Command command = Parser.parse(input.split(" "));
+		
 		return command.execute();
 	}
 }

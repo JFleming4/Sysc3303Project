@@ -1,5 +1,7 @@
 package parsing;
 
+import parsing.Command;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
