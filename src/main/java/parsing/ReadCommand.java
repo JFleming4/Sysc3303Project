@@ -12,6 +12,7 @@ import socket.TFTPDatagramSocket;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.UnknownHostException;
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 import static resources.Configuration.GLOBAL_CONFIG;
@@ -90,6 +91,12 @@ public class ReadCommand extends SocketCommand {
 			} catch(UnknownHostException uHE) {
 				LOG.logQuiet("Error: Unknown Host Entered");
 			} catch(IOException ioE) {
+                if(ioE instanceof AccessDeniedException) {
+                    LOG.logQuiet("You do not have the correct permisions to access this file");
+                }
+                // Need to query disk space available for each packet and throw an error if there
+                // is not enough space. Look into  getUsableSpace() on write place in resource manager
+                // Make custom error
 				LOG.logVerbose("An IOException has occurred: " + ioE.getLocalizedMessage());
 				ioE.printStackTrace();
 			} finally {
