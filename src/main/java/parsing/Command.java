@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import logging.Logger;
+import states.State;
 
 
 public abstract class Command {
@@ -26,7 +27,7 @@ public abstract class Command {
 		setLogLevel();
 	}
 	
-	public abstract void execute();
+	public abstract State execute();
 	
 	public String getOperation() {
 		return operation;

@@ -2,6 +2,9 @@ package parsing;
 
 import java.util.List;
 
+import states.InputState;
+import states.State;
+
 public class HelpCommand extends Command {
 	private static final String HELP_OPERATION = "help";
 	private static final String HELP_FORMAT = "";
@@ -15,7 +18,7 @@ public class HelpCommand extends Command {
 	}
 	
 	@Override
-	public void execute() {
+	public State execute() {
 		Command cmd;
 		
 		cmd = new ReadCommand(tokens);
@@ -29,5 +32,6 @@ public class HelpCommand extends Command {
 
 		cmd = new ExitCommand(tokens);
 		System.out.println(">> " + cmd.toHelp());
+		return new InputState();
 	}
 }

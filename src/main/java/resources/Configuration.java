@@ -8,7 +8,7 @@ import logging.Logger;
 import java.io.IOException;
 
 public class Configuration {
-    private static final Logger LOG = new Logger("Configuration");
+    private static final Logger LOG = new logging.Logger("Configuration");
     private static final String CONFIG_NAME = "config.json";
     private static final String CONFIG_DIR = "config";
     public static final Configuration GLOBAL_CONFIG = loadConfiguration(CONFIG_NAME);
