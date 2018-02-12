@@ -2,6 +2,9 @@ package parsing;
 
 import java.util.List;
 
+import states.ExitState;
+import states.State;
+
 public class ExitCommand extends Command {
 	private static final String EXIT_OPERATION = "exit";
 	private static final String EXIT_FORMAT = "";
@@ -15,8 +18,8 @@ public class ExitCommand extends Command {
 	}
 	
 	@Override
-	public void execute() {
+	public State execute() {
 		LOG.logQuiet("Shutting down.");
-		System.exit(0);
+		return new ExitState();
 	}
 }

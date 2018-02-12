@@ -1,21 +1,20 @@
-import java.util.Scanner;
+import states.InputState;
 
-import parsing.Command;
-import parsing.Parser;
-
-public class FTPClient {
-	public static void main(String[] args) {
-		Scanner sc = new Scanner(System.in);
-		Command command = null;
-		String input;
-		
-		System.out.println("Type 'help' for a list of commands");
-		
-		for (;;) {
-			input = sc.nextLine();
-			command = Parser.parse(input.split(" "));
-			command.execute();
-		}
+public class FTPClient extends Thread {
+	private states.State state;
+	
+	public FTPClient() {
+		this.state = new InputState();
 	}
-
+	
+	@Override
+	public void run() {	
+		while(true)
+			state = state.execute();
+	}
+	
+	public static void main(String[] args) {
+		FTPClient client = new FTPClient();
+		client.start();
+	}
 }
