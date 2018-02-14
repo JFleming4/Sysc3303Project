@@ -1,5 +1,6 @@
 package parsing;
 
+import java.io.IOException;
 import java.util.List;
 
 import states.InputState;
@@ -19,13 +20,20 @@ public class HelpCommand extends Command {
 	
 	@Override
 	public State execute() {
+
 		Command cmd;
 		
-		cmd = new ReadCommand(tokens);
-		System.out.println(">> " + cmd.toHelp());
-		
-		cmd = new WriteCommand(tokens);
-		System.out.println(">> " + cmd.toHelp());
+		try
+		{
+			cmd = new ReadCommand(tokens);
+			System.out.println(">> " + cmd.toHelp());
+
+			cmd = new WriteCommand(tokens);
+			System.out.println(">> " + cmd.toHelp());
+		} catch (IOException ioE) {
+			ioE.printStackTrace();
+		}
+
 		
 		cmd = new HelpCommand(tokens);
 		System.out.println(">> " + cmd.toHelp());

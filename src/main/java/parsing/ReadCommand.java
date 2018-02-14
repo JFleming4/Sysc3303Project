@@ -12,12 +12,13 @@ public class ReadCommand extends SocketCommand {
 	private static final Logger LOG = new Logger("FTPClient - Read");
 	private static final String READ_OPERATION = "read";
 
-	public ReadCommand(List<String> tokens) {
-		super(READ_OPERATION, tokens);
-    }
 
-	public ReadCommand(String[] tokens) {
-	    super(READ_OPERATION, tokens);
+	public ReadCommand(List<String> tokens) throws IOException {
+		super(READ_OPERATION, tokens);
+	}
+
+	public ReadCommand(String[] tokens) throws IOException {
+		super(READ_OPERATION, tokens);
 	}
 
 	@Override
@@ -33,4 +34,5 @@ public class ReadCommand extends SocketCommand {
 			}
 		return new InputState();
 	}
+
 }

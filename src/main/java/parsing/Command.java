@@ -1,5 +1,6 @@
 package parsing;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,7 +28,7 @@ public abstract class Command {
 		setLogLevel();
 	}
 	
-	public abstract State execute();
+	public abstract State execute() throws IOException;
 	
 	public String getOperation() {
 		return operation;

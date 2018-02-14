@@ -1,5 +1,6 @@
 package states;
 
+import java.io.IOException;
 import java.util.Scanner;
 
 import parsing.Command;
@@ -12,8 +13,14 @@ public class InputState extends State {
 		
 		Scanner sc = new Scanner(System.in);
 		String input = sc.nextLine();
-		Command command = Parser.parse(input.split(" "));
-		
-		return command.execute();
+
+		try {
+			Command command = Parser.parse(input.split(" "));
+			return command.execute();
+		} catch (IOException ioE) {
+			ioE.printStackTrace();
+		}
+
+		return new ExitState();
 	}
 }
