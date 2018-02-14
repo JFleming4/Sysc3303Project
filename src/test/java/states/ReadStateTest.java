@@ -1,4 +1,4 @@
-package parsing;
+package states;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -20,9 +20,8 @@ import formats.Message.MessageType;
 import formats.RequestMessage;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
-import states.ReadState;
 
-public class ReadCommandTest {
+public class ReadStateTest {
 
 	private static final String FILENAME = "file.txt";
     private static final String FILE_SHORT = "Hello World";
@@ -65,8 +64,8 @@ public class ReadCommandTest {
             Mockito.when(socket.receivePacket()).thenReturn(new DatagramPacket(mockedData.toByteArray(), mockedData.toByteArray().length, connectionManagerSocketAddress));
 
             // Execute function
-            ReadState readCmd = new ReadState(serverAddress, FILENAME, false, socket, resourceManager);
-            readCmd.execute();
+            ReadState readState = new ReadState(serverAddress, FILENAME, false, socket, resourceManager);
+            readState.execute();
 
             // Verify first sent request is a RRRQ
             inOrder.verify(socket).sendMessage(argument.capture(), Mockito.eq( serverAddress));
