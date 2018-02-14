@@ -3,6 +3,7 @@ package parsing;
 import static org.junit.Assert.*;
 import static resources.Configuration.GLOBAL_CONFIG;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -21,7 +22,7 @@ public class SocketCommandTest extends CommandTest {
 	
 	private SocketCommand socketCmd;
 	
-	public SocketCommandTest(String[] tokens) {
+	public SocketCommandTest(String[] tokens) throws IOException {
 		super(tokens);
 		this.socketCmd = (SocketCommand) cmd;
 	}

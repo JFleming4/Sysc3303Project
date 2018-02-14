@@ -2,6 +2,7 @@ package parsing;
 
 import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -19,7 +20,7 @@ public class CommandTest {
 	protected List<String> tokens;
 	protected Command cmd;
 	
-	public CommandTest(String[] tokens) {
+	public CommandTest(String[] tokens) throws IOException {
 		this.cmd = Parser.parse(tokens);
 		this.tokens = Arrays.asList(tokens);
 	}

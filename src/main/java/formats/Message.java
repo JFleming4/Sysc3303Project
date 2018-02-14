@@ -1,5 +1,6 @@
 package formats;
 
+import exceptions.InvalidPacketException;
 import logging.Logger;
 
 import java.io.ByteArrayOutputStream;
@@ -64,6 +65,18 @@ public abstract class Message {
         {
             return RRQ.equals(type) || WRQ.equals(type);
         }
+    }
+
+    /**
+     * Get the enum value from the passed in data
+     * @param data Data from a received message
+     * @return The enumeration instance associated with the integer type
+     */
+    public static MessageType getMessageType (byte[] data) throws InvalidPacketException
+    {
+        if (data.length < 2) throw new InvalidPacketException("Message type not valid");
+
+        return MessageType.getMessageType(data[1]);
     }
 
     /**

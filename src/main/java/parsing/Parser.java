@@ -1,9 +1,9 @@
 package parsing;
 
-import parsing.Command;
+import java.io.IOException;
 
 public class Parser {
-	public static Command parse(String[] tokens) {
+	public static Command parse(String[] tokens) throws IOException {
 		Command cmd;
 		switch(tokens[0].toUpperCase()) {
 		case "READ":

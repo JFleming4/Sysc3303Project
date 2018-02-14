@@ -5,6 +5,7 @@ import formats.ErrorMessage;
 import formats.Message;
 import formats.RequestMessage;
 import formats.ErrorMessage.ErrorType;
+
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
@@ -15,10 +16,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
+
+import java.util.*;
 
 import static resources.Configuration.GLOBAL_CONFIG;
 
@@ -147,7 +146,7 @@ public class FTPServer extends Thread {
 				System.out.print(">> ");
 				String command = input.nextLine();
 				if(command.trim().isEmpty())
-				    continue;
+					continue;
 
 				switch (command.toLowerCase())
 				{
@@ -167,7 +166,7 @@ public class FTPServer extends Thread {
 						Logger.setLogLevel(Logger.LogLevel.QUIET);
 						break;
 					case "help":
-					System.out.println("Commands:\n'exit' -> Shutdown the server\n'verbose' -> Enable verbose logging\n'quiet' -> Enable quiet logging");
+						System.out.println("Commands:\n'exit' -> Shutdown the server\n'verbose' -> Enable verbose logging\n'quiet' -> Enable quiet logging");
 						break;
 					default:
 						System.out.println("'" + command + "' is not a valid command.");
@@ -182,9 +181,9 @@ public class FTPServer extends Thread {
 		} catch (InterruptedException iE) {
 			// No need to worry about this
 		} catch (NoSuchElementException nSEE) {
-		    // Scanner throws this when a line is empty and the application quits
-            // No need to worry about this
-        }
+			// Scanner throws this when a line is empty and the application quits
+			// No need to worry about this
+		}
 	}
 }
 
@@ -195,8 +194,8 @@ class ServerWorker extends Thread {
 	private ResourceManager resourceManager;
 
 	public ServerWorker(long workerId, DatagramPacket p) throws IOException {
-	    // Include Worker ID in Log Tag
-	    LOG.setComponentName("ServerWorker-" + workerId);
+		// Include Worker ID in Log Tag
+		LOG.setComponentName("ServerWorker-" + workerId);
 
 		this.packet = p;
 		this.resourceManager = new ResourceManager(GLOBAL_CONFIG.SERVER_RESOURCE_DIR);
@@ -211,10 +210,6 @@ class ServerWorker extends Thread {
 			socket = new TFTPDatagramSocket();
 
 			// Parse data into a DAO that is accessible
-			if(ErrorMessage.isErrorMessage(this.packet)) {
-				ErrorMessage.logErrorPacket(packet);
-				return;
-			}
 			RequestMessage receivedMessage = RequestMessage.parseMessageFromPacket(this.packet);
 			LOG.logVerbose("Client Information: " + this.packet.getSocketAddress().toString());
 			LOG.logVerbose("File Name: " + receivedMessage.getFileName());
@@ -224,12 +219,12 @@ class ServerWorker extends Thread {
 			switch (receivedMessage.getMessageType())
 			{
 				case RRQ:
-				    LOG.logQuiet("Received Read Request");
+					LOG.logQuiet("Received Read Request");
 					readRequest(receivedMessage);
 					LOG.logQuiet("Successfully handled RRQ");
 					break;
 				case WRQ:
-                    LOG.logQuiet("Received Write Request");
+					LOG.logQuiet("Received Write Request");
 					writeRequest(receivedMessage);
 					LOG.logQuiet("Successfully handled WRQ");
 					break;
@@ -264,21 +259,28 @@ class ServerWorker extends Thread {
 
 	/**
 	 * Logic to handle a read request
+	 * Sends an ErrorMessage to the Client if the file does not exist
 	 * @throws IOException
 	 */
 	private void readRequest(RequestMessage message) throws IOException {
 		try {
-		    byte [] fileBytes = resourceManager.readFileToBytes(message.getFileName());
-		    sendDataBlock(fileBytes);
+			byte [] fileBytes = resourceManager.readFileToBytes(message.getFileName());
+			sendDataBlock(fileBytes);
 		} catch (FileNotFoundException e) {
-			if(e.getLocalizedMessage().contains("Access is denied")) {
+			e.printStackTrace();
+			if (e.getLocalizedMessage().contains("Access is denied") || e.getLocalizedMessage().contains("Permission denied"))
+			{
 				LOG.logQuiet("You do not have permissions to read this file");
         		ErrorMessage errMsg = new ErrorMessage(ErrorType.ACCESS_VIOLATION, "You do not have the correct permissions for this file");
         		socket.sendMessage(errMsg, packet.getSocketAddress());
-			} else {
-				LOG.logQuiet("Requested File: '" + message.getFileName() + "' Not Found");
-				throw new IOException("File not found exception thrown", e);
 			}
+			else {
+				LOG.logQuiet("Requested File: '" + message.getFileName() + "' Not Found");
+				// Send an ErrorMessage if the file to be read does not exist
+				ErrorMessage fileNotFoundMessage = new ErrorMessage(ErrorMessage.ErrorType.FILE_NOT_FOUND, "Requested File: " + message.getFileName() + " Not Found");
+				socket.sendMessage(fileNotFoundMessage, packet.getSocketAddress());
+			}
+
 		}
 	}
 
@@ -293,6 +295,16 @@ class ServerWorker extends Thread {
         int expBlockNum = 0;
         String fileName = message.getFileName();
 
+
+		// Determine if the file already exists on the Sever
+		if (resourceManager.fileExists(fileName))
+		{
+			LOG.logQuiet("File (" + fileName + ") already exists on the Server");
+			ErrorMessage fileAlreadyExistsMessage = new ErrorMessage(ErrorMessage.ErrorType.FILE_EXISTS, "File (" + fileName + ") already exists on the Server.");
+
+			socket.sendMessage(fileAlreadyExistsMessage, packet.getSocketAddress());
+		}
+
         // WRQ Ack
         AckMessage ackMessage = new AckMessage(expBlockNum++);
 		socket.sendMessage(ackMessage, packet.getSocketAddress());
@@ -305,10 +317,14 @@ class ServerWorker extends Thread {
 
                 // Wait for more data
                 DatagramPacket recv = socket.receivePacket();
-                if(ErrorMessage.isErrorMessage(recv)) {
-                	ErrorMessage.logErrorPacket(recv);
-                	break;
-                }
+
+                if (Message.getMessageType(recv.getData()).equals(Message.MessageType.ERROR))
+                {
+                	LOG.logQuiet("Received Error from Client");
+                	LOG.logVerbose(packet);
+					return;
+				}
+
                 DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                 LOG.logVerbose("Received Data block. Block Number: " + dataMessage.getBlockNum() + ", Block Size: "
                         + dataMessage.getDataSize() + ", Final Block: " + dataMessage.isFinalBlock());
@@ -331,8 +347,9 @@ class ServerWorker extends Thread {
                     LOG.logVerbose("End of read file reached");
                     break;
                 }
-            }catch(IOException ioe) {
-            	if(ioe.getMessage().contains("Not enough usable space")) {
+            } catch (IOException ioe) {
+            	if (ioe.getMessage().contains("Not enough usable space"))
+            	{
             		LOG.logQuiet("Not enough free space");
             		ErrorMessage msg = new ErrorMessage(ErrorType.DISK_FULL, "Not enough free space");
             		socket.sendMessage(msg, packet.getSocketAddress());
@@ -346,35 +363,41 @@ class ServerWorker extends Thread {
                 throw new IOException("Packet Exception occurred", e);
             }
         }
+
 	}
 
 
 
-    /**
-     * Sends an array of bytes over TFTP, splicing the data in blocks if necessary
-     * @param data The array of data
-     * @throws IOException
-     */
-    private void sendDataBlock(byte[] data) throws IOException {
+	/**
+	 * Creates a DATA Message
+	 * Sends an array of bytes over TFTP, splicing the data in blocks if necessary
+	 * @param data The array of data
+	 * @throws IOException
+	 */
+	private void sendDataBlock(byte[] data) throws IOException {
 
-        // Create a sequence of data for the byte array
-        List<DataMessage> messages = DataMessage.createDataMessageSequence(data);
-        LOG.logVerbose("Sending " + messages.size() + " Data messages to " + packet.getSocketAddress());
+		// Create a sequence of data for the byte array
+		List<DataMessage> messages = DataMessage.createDataMessageSequence(data);
+		LOG.logVerbose("Sending " + messages.size() + " Data messages to " + packet.getSocketAddress());
 
-        try {
-            // Send each data block sequentially
-            for(DataMessage m : messages) {
+		try {
+			// Send each data block sequentially
+			for(DataMessage m : messages) {
 
-                LOG.logVerbose("Block: " + m.getBlockNum() + ", Data size: " + m.getDataSize() + ", Final Block: " + m.isFinalBlock());
+				LOG.logVerbose("Block: " + m.getBlockNum() + ", Data size: " + m.getDataSize() + ", Final Block: " + m.isFinalBlock());
 
-                // Send Data block message
-                socket.sendMessage(m, packet.getSocketAddress());
+				// Send Data block message
+				socket.sendMessage(m, packet.getSocketAddress());
 
                 // Wait for Ack message before continuing
                 DatagramPacket packet = socket.receivePacket();
-                if(ErrorMessage.isErrorMessage(packet)) {
-                	ErrorMessage.logErrorPacket(packet);
-                } else {
+                if(Message.getMessageType(packet.getData()).equals(Message.MessageType.ERROR))
+                {
+                	LOG.logQuiet("Received an Error from the Client");
+                	LOG.logVerbose(packet);
+                	throw new IOException("Received an Error message");
+                }
+                else {
                 	AckMessage ack = AckMessage.parseMessageFromPacket(packet);
                 	LOG.logVerbose("Ack Received: " + ack.getBlockNum());
 
@@ -388,4 +411,5 @@ class ServerWorker extends Thread {
             throw new IOException("Failed to parse Ack Message", e);
         }
     }
+
 }

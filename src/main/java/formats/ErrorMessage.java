@@ -123,21 +123,11 @@ public class ErrorMessage extends Message {
     		return false;
     	}
     }
-    
-    public static void logErrorPacket(DatagramPacket packet) {
-		try {
-			ErrorMessage msg = ErrorMessage.parseMessageFromPacket(packet);
-			LOG.logQuiet(msg.getMessage());
-		} catch (InvalidPacketException e) {
-			LOG.logQuiet("Malformed Error Packet");
-			e.printStackTrace();
-		}
-	}
 
     /**
-     * Creates a RequestMessage object from a packet object
+     * Creates an ErrorMessage object from a packet object
      * @param packet The packet object containing the data to be parsed
-     * @return The RequestMessage object containing all relevant info
+     * @return The ErrorMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
     public static ErrorMessage parseMessageFromPacket(DatagramPacket packet) throws InvalidPacketException {
@@ -145,7 +135,7 @@ public class ErrorMessage extends Message {
     }
 
     /**
-     * Creates a ErrorMessage object from a byte array
+     * Creates an ErrorMessage object from a byte array
      * @param data The Data retrieved in a packet
      * @return The ErrorMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data

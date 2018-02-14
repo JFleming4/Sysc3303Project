@@ -1,7 +1,9 @@
 package parsing;
 
-import parsing.Command;
 
+import resources.ResourceManager;
+
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -15,6 +17,7 @@ public abstract class SocketCommand extends Command {
     private static final int SERVER_ADDR_IDX = 2;
     private static final String SOCKET_COMMAND_FORMAT = "FILENAME SERVER_ADDRESS [--verbose|-v] [--test|-t]";
     protected static final int SOCKET_TIMEOUT = 5000;
+    protected ResourceManager resourceManager;
 
 	private enum Options {
 		VERBOSE_LONG("--verbose"),
@@ -45,12 +48,14 @@ public abstract class SocketCommand extends Command {
 		}
 	}
 
-	public SocketCommand(String operation, String[] tokens) {
+	public SocketCommand(String operation, String[] tokens) throws IOException {
 		super(operation, SOCKET_COMMAND_FORMAT, tokens);
+		resourceManager = new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR);
 	}
 
-	public SocketCommand(String operation, List<String> tokens) {
+	public SocketCommand(String operation, List<String> tokens) throws IOException {
 		super(operation, SOCKET_COMMAND_FORMAT, tokens);
+		resourceManager = new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR);
 	}
 
 	public InetSocketAddress getServerAddress() throws UnknownHostException {
@@ -61,6 +66,10 @@ public abstract class SocketCommand extends Command {
 
 	public String getFilename() {
 		return tokens.get(FILENAME_IDX);
+	}
+
+	public void setFileName(String fileName) {
+		tokens.set(FILENAME_IDX, fileName);
 	}
 
 	public boolean isVerbose() {
@@ -82,7 +91,7 @@ public abstract class SocketCommand extends Command {
 		return false;
 	}
 	
-	private InetSocketAddress errorSimulatorAddress() throws UnknownHostException {
+	private InetSocketAddress errorSimulatorAddress() {
 		return new InetSocketAddress(InetAddress.getLoopbackAddress(), GLOBAL_CONFIG.SIMULATOR_PORT);
 	}
 	
