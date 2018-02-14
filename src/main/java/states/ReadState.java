@@ -13,6 +13,7 @@ import formats.AckMessage;
 import formats.DataMessage;
 import formats.ErrorMessage;
 import formats.RequestMessage;
+import formats.ErrorMessage.ErrorType;
 import logging.Logger;
 import formats.Message.MessageType;
 import resources.ResourceManager;
@@ -37,6 +38,7 @@ public class ReadState extends State {
 	@Override
 	public State execute() {
 		int expBlockNum = -1;
+		SocketAddress recvSocketAddress = serverAddress;
 		try {
 			// Create the resource manager, handle IOException if failed to get resource directory
 			ResourceManager resourceManager = new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR);
@@ -50,7 +52,6 @@ public class ReadState extends State {
 			LOG.logQuiet("---- Begin File Transaction ---");
             LOG.logQuiet("Read request sent!");
             LOG.logQuiet("Waiting to receive data");
-
 			for(;;) {
 
 				try {
@@ -60,6 +61,7 @@ public class ReadState extends State {
                     	ErrorMessage.logErrorPacket(recv);
                     	break;
                     }
+                    recvSocketAddress = recv.getSocketAddress();
                     DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                     LOG.logVerbose("Received data block: " + dataMessage.getBlockNum());
         
@@ -87,7 +89,16 @@ public class ReadState extends State {
 						break;
                     }
 
-                } catch (InvalidPacketException e) {
+                } catch(IOException ioE) {
+                	if(ioE.getMessage().contains("Not enough usable space")) {
+        				LOG.logQuiet("Not enough usable disk space");
+                		ErrorMessage msg = new ErrorMessage(ErrorType.DISK_FULL, "Not enough free space on disk");
+        				socket.sendMessage(msg, recvSocketAddress);
+        				break;
+                	} else {
+                		ioE.printStackTrace();
+                	}
+                }catch (InvalidPacketException e) {
                     e.printStackTrace();
                 }
 			}

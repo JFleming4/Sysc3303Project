@@ -58,14 +58,18 @@ public class WriteState extends State {
 
                 // Wait for WRQ ack
                 DatagramPacket recv = socket.receivePacket();
-                AckMessage ack = AckMessage.parseMessageFromPacket(recv);
-                LOG.logVerbose("Received WRQ ACK");
-                recvSocketAddr = recv.getSocketAddress();
-                if(ack.getBlockNum() != 0) throw new IOException("Incorrect Initial Block Number");
+                if(ErrorMessage.isErrorMessage(recv)) {
+                	ErrorMessage.logErrorPacket(recv);
+                } else {
+                	AckMessage ack = AckMessage.parseMessageFromPacket(recv);
+                	LOG.logVerbose("Received WRQ ACK");
+                	recvSocketAddr = recv.getSocketAddress();
+                	if(ack.getBlockNum() != 0) throw new IOException("Incorrect Initial Block Number");
 
-                sendDataBlock(resourceManager.readFileToBytes(filename), recv.getSocketAddress());
-                LOG.logQuiet("Successfully completed write operation");
-                LOG.logQuiet("---- End File Transaction ---");
+                	sendDataBlock(resourceManager.readFileToBytes(filename), recv.getSocketAddress());
+                	LOG.logQuiet("Successfully completed write operation");
+                	LOG.logQuiet("---- End File Transaction ---");
+                }
             } catch(InvalidPacketException ipE) {
                 LOG.logQuiet(ipE.getMessage());
             } catch(UnknownHostException uHE) {
@@ -112,11 +116,16 @@ public class WriteState extends State {
 
                 // Wait for Ack message before continuing
                 DatagramPacket packet = socket.receivePacket();
-                AckMessage ack = AckMessage.parseMessageFromPacket(packet);
-                LOG.logVerbose("Ack Received: " + ack.getBlockNum());
-
-                if(ack.getBlockNum() != m.getBlockNum()) {
-                    throw new InvalidPacketException("Invalid Block Number");
+                if(ErrorMessage.isErrorMessage(packet)) {
+                	ErrorMessage.logErrorPacket(packet);
+                	break;
+                } else {
+	                AckMessage ack = AckMessage.parseMessageFromPacket(packet);
+	                LOG.logVerbose("Ack Received: " + ack.getBlockNum());
+	
+	                if(ack.getBlockNum() != m.getBlockNum()) {
+	                    throw new InvalidPacketException("Invalid Block Number");
+	                }
                 }
             }
         } catch (InvalidPacketException e) {

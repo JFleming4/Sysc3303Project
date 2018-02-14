@@ -331,7 +331,17 @@ class ServerWorker extends Thread {
                     LOG.logVerbose("End of read file reached");
                     break;
                 }
-            } catch (InvalidPacketException e) {
+            }catch(IOException ioe) {
+            	if(ioe.getMessage().contains("Not enough usable space")) {
+            		LOG.logQuiet("Not enough free space");
+            		ErrorMessage msg = new ErrorMessage(ErrorType.DISK_FULL, "Not enough free space");
+            		socket.sendMessage(msg, packet.getSocketAddress());
+            		break;
+            	} else {
+            		ioe.printStackTrace();
+            	}
+            }
+            catch (InvalidPacketException e) {
                 e.printStackTrace();
                 throw new IOException("Packet Exception occurred", e);
             }
@@ -362,11 +372,15 @@ class ServerWorker extends Thread {
 
                 // Wait for Ack message before continuing
                 DatagramPacket packet = socket.receivePacket();
-                AckMessage ack = AckMessage.parseMessageFromPacket(packet);
-                LOG.logVerbose("Ack Received: " + ack.getBlockNum());
+                if(ErrorMessage.isErrorMessage(packet)) {
+                	ErrorMessage.logErrorPacket(packet);
+                } else {
+                	AckMessage ack = AckMessage.parseMessageFromPacket(packet);
+                	LOG.logVerbose("Ack Received: " + ack.getBlockNum());
 
-                if(ack.getBlockNum() != m.getBlockNum()) {
-                    throw new InvalidPacketException("Invalid Block Number");
+                	if(ack.getBlockNum() != m.getBlockNum()) {
+                		throw new InvalidPacketException("Invalid Block Number");
+                	}
                 }
             }
         } catch (InvalidPacketException e) {
