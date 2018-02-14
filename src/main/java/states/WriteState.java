@@ -8,6 +8,7 @@ import java.net.DatagramPacket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 import exceptions.InvalidPacketException;
@@ -77,6 +78,9 @@ public class WriteState extends State {
         } catch (FileNotFoundException fNFE) {
             LOG.logQuiet("Error: " + fNFE.getMessage());
         } catch (IOException ioE) {
+            if(ioE instanceof AccessDeniedException) {
+                LOG.logQuiet("You do not have the correct permisions to access this file");
+            }
             LOG.logVerbose("IOException occurred. " + ioE.getLocalizedMessage());
         }
         return new InputState();
