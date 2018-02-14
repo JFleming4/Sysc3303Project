@@ -89,6 +89,9 @@ public class ResourceManager {
 			LOG.logVerbose("File does not exist and failed to be created. (" + file.getCanonicalPath() + ")");
 			throw new IOException("Failed to create file (" + file.getCanonicalPath() + ")");
 		}
+		if(file.getUsableSpace() < data.length) {
+			throw new IOException("Not enough usable space");
+		}
 
 		// Append block to file
 		FileOutputStream  fileOutputStream = new FileOutputStream(file, true);

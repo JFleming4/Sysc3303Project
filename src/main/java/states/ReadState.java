@@ -11,8 +11,10 @@ import java.net.UnknownHostException;
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
+import formats.ErrorMessage;
 import formats.Message.MessageType;
 import formats.RequestMessage;
+import formats.ErrorMessage.ErrorType;
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
@@ -49,6 +51,7 @@ public class ReadState extends State {
 	@Override
 	public State execute() {
 		int expBlockNum = -1;
+		SocketAddress recvSocketAddress = serverAddress;
 		try {
 			// Set up + Send RRQ Message
             RequestMessage rrqMessage = new RequestMessage(MessageType.RRQ ,filename);
@@ -56,12 +59,16 @@ public class ReadState extends State {
 			LOG.logQuiet("---- Begin File Transaction ---");
             LOG.logQuiet("Read request sent!");
             LOG.logQuiet("Waiting to receive data");
-
 			for(;;) {
 
 				try {
 				    // Receive read data from server
                     DatagramPacket recv = socket.receivePacket();
+                    if(ErrorMessage.isErrorMessage(recv)) {
+                    	ErrorMessage.logErrorPacket(recv);
+                    	break;
+                    }
+                    recvSocketAddress = recv.getSocketAddress();
                     DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                     LOG.logVerbose("Received data block: " + dataMessage.getBlockNum());
 
@@ -89,7 +96,16 @@ public class ReadState extends State {
 						break;
                     }
 
-                } catch (InvalidPacketException e) {
+                } catch(IOException ioE) {
+                	if(ioE.getMessage().contains("Not enough usable space")) {
+        				LOG.logQuiet("Not enough usable disk space");
+                		ErrorMessage msg = new ErrorMessage(ErrorType.DISK_FULL, "Not enough free space on disk");
+        				socket.sendMessage(msg, recvSocketAddress);
+        				break;
+                	} else {
+                		ioE.printStackTrace();
+                	}
+                }catch (InvalidPacketException e) {
                     e.printStackTrace();
                 }
 			}

@@ -13,7 +13,9 @@ import java.util.List;
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
+import formats.ErrorMessage;
 import formats.RequestMessage;
+import formats.ErrorMessage.ErrorType;
 import formats.Message.MessageType;
 import logging.Logger;
 import resources.ResourceManager;
@@ -41,9 +43,9 @@ public class WriteState extends State {
             ResourceManager resourceManager = new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR);
             if(!resourceManager.fileExists(filename))
                 throw new FileNotFoundException("File Not Found");
-
             socket = new TFTPDatagramSocket();
             socket.setSoTimeout(SOCKET_TIMEOUT);
+            SocketAddress recvSocketAddr = serverAddress;
 
             try {
 
@@ -56,20 +58,30 @@ public class WriteState extends State {
 
                 // Wait for WRQ ack
                 DatagramPacket recv = socket.receivePacket();
-                AckMessage ack = AckMessage.parseMessageFromPacket(recv);
-                LOG.logVerbose("Received WRQ ACK");
+                if(ErrorMessage.isErrorMessage(recv)) {
+                	ErrorMessage.logErrorPacket(recv);
+                } else {
+                	AckMessage ack = AckMessage.parseMessageFromPacket(recv);
+                	LOG.logVerbose("Received WRQ ACK");
+                	recvSocketAddr = recv.getSocketAddress();
+                	if(ack.getBlockNum() != 0) throw new IOException("Incorrect Initial Block Number");
 
-                if(ack.getBlockNum() != 0) throw new IOException("Incorrect Initial Block Number");
-
-                sendDataBlock(resourceManager.readFileToBytes(filename), recv.getSocketAddress());
-                LOG.logQuiet("Successfully completed write operation");
-                LOG.logQuiet("---- End File Transaction ---");
+                	sendDataBlock(resourceManager.readFileToBytes(filename), recv.getSocketAddress());
+                	LOG.logQuiet("Successfully completed write operation");
+                	LOG.logQuiet("---- End File Transaction ---");
+                }
             } catch(InvalidPacketException ipE) {
                 LOG.logQuiet(ipE.getMessage());
             } catch(UnknownHostException uHE) {
                 LOG.logQuiet("Error: Unknown Host Entered");
             } catch(IOException ioE) {
-                ioE.printStackTrace();
+            	if(ioE.getLocalizedMessage().contains("Access is denied")) {
+            		LOG.logQuiet("You do not have permissions to read this file");
+            		ErrorMessage errMsg = new ErrorMessage(ErrorType.ACCESS_VIOLATION, "You do not have the correct permissions for this file");
+            		socket.sendMessage(errMsg, recvSocketAddr);
+            	} else {
+            		ioE.printStackTrace();
+            	}      
             }
             socket.close();
         } catch (SocketException sE) {
@@ -77,7 +89,7 @@ public class WriteState extends State {
         } catch (FileNotFoundException fNFE) {
             LOG.logQuiet("Error: " + fNFE.getMessage());
         } catch (IOException ioE) {
-            LOG.logVerbose("IOException occurred. " + ioE.getLocalizedMessage());
+            LOG.logQuiet("IOException occurred. " + ioE.getLocalizedMessage());
         }
         return new InputState();
 	}
@@ -99,17 +111,21 @@ public class WriteState extends State {
             for(DataMessage m : messages) {
 
                 LOG.logVerbose("Block: " + m.getBlockNum() + ", Data size: " + m.getDataSize() + ", Final Block: " + m.isFinalBlock());
-
                 // Send Data block message
                 socket.sendMessage(m, socketAddress);
 
                 // Wait for Ack message before continuing
                 DatagramPacket packet = socket.receivePacket();
-                AckMessage ack = AckMessage.parseMessageFromPacket(packet);
-                LOG.logVerbose("Ack Received: " + ack.getBlockNum());
-
-                if(ack.getBlockNum() != m.getBlockNum()) {
-                    throw new InvalidPacketException("Invalid Block Number");
+                if(ErrorMessage.isErrorMessage(packet)) {
+                	ErrorMessage.logErrorPacket(packet);
+                	break;
+                } else {
+	                AckMessage ack = AckMessage.parseMessageFromPacket(packet);
+	                LOG.logVerbose("Ack Received: " + ack.getBlockNum());
+	
+	                if(ack.getBlockNum() != m.getBlockNum()) {
+	                    throw new InvalidPacketException("Invalid Block Number");
+	                }
                 }
             }
         } catch (InvalidPacketException e) {

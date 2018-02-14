@@ -26,6 +26,7 @@ public class ReadCommand extends SocketCommand {
 			LOG.logQuiet("Error: Not enough arguments");
 		else
 			try {
+
 				return new ReadState(getServerAddress(), getFilename(), isVerbose());
 			} catch (IOException e) {
 				e.printStackTrace();

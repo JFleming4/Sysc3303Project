@@ -1,8 +1,10 @@
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
+import formats.ErrorMessage;
 import formats.Message;
 import formats.RequestMessage;
+import formats.ErrorMessage.ErrorType;
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
@@ -209,6 +211,10 @@ class ServerWorker extends Thread {
 			socket = new TFTPDatagramSocket();
 
 			// Parse data into a DAO that is accessible
+			if(ErrorMessage.isErrorMessage(this.packet)) {
+				ErrorMessage.logErrorPacket(packet);
+				return;
+			}
 			RequestMessage receivedMessage = RequestMessage.parseMessageFromPacket(this.packet);
 			LOG.logVerbose("Client Information: " + this.packet.getSocketAddress().toString());
 			LOG.logVerbose("File Name: " + receivedMessage.getFileName());
@@ -265,8 +271,14 @@ class ServerWorker extends Thread {
 		    byte [] fileBytes = resourceManager.readFileToBytes(message.getFileName());
 		    sendDataBlock(fileBytes);
 		} catch (FileNotFoundException e) {
-			LOG.logQuiet("Requested File: '" + message.getFileName() + "' Not Found");
-			throw new IOException("File not found exception thrown", e);
+			if(e.getLocalizedMessage().contains("Access is denied")) {
+				LOG.logQuiet("You do not have permissions to read this file");
+        		ErrorMessage errMsg = new ErrorMessage(ErrorType.ACCESS_VIOLATION, "You do not have the correct permissions for this file");
+        		socket.sendMessage(errMsg, packet.getSocketAddress());
+			} else {
+				LOG.logQuiet("Requested File: '" + message.getFileName() + "' Not Found");
+				throw new IOException("File not found exception thrown", e);
+			}
 		}
 	}
 
@@ -293,6 +305,10 @@ class ServerWorker extends Thread {
 
                 // Wait for more data
                 DatagramPacket recv = socket.receivePacket();
+                if(ErrorMessage.isErrorMessage(recv)) {
+                	ErrorMessage.logErrorPacket(recv);
+                	break;
+                }
                 DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                 LOG.logVerbose("Received Data block. Block Number: " + dataMessage.getBlockNum() + ", Block Size: "
                         + dataMessage.getDataSize() + ", Final Block: " + dataMessage.isFinalBlock());
@@ -315,7 +331,17 @@ class ServerWorker extends Thread {
                     LOG.logVerbose("End of read file reached");
                     break;
                 }
-            } catch (InvalidPacketException e) {
+            }catch(IOException ioe) {
+            	if(ioe.getMessage().contains("Not enough usable space")) {
+            		LOG.logQuiet("Not enough free space");
+            		ErrorMessage msg = new ErrorMessage(ErrorType.DISK_FULL, "Not enough free space");
+            		socket.sendMessage(msg, packet.getSocketAddress());
+            		break;
+            	} else {
+            		ioe.printStackTrace();
+            	}
+            }
+            catch (InvalidPacketException e) {
                 e.printStackTrace();
                 throw new IOException("Packet Exception occurred", e);
             }
@@ -346,11 +372,15 @@ class ServerWorker extends Thread {
 
                 // Wait for Ack message before continuing
                 DatagramPacket packet = socket.receivePacket();
-                AckMessage ack = AckMessage.parseMessageFromPacket(packet);
-                LOG.logVerbose("Ack Received: " + ack.getBlockNum());
+                if(ErrorMessage.isErrorMessage(packet)) {
+                	ErrorMessage.logErrorPacket(packet);
+                } else {
+                	AckMessage ack = AckMessage.parseMessageFromPacket(packet);
+                	LOG.logVerbose("Ack Received: " + ack.getBlockNum());
 
-                if(ack.getBlockNum() != m.getBlockNum()) {
-                    throw new InvalidPacketException("Invalid Block Number");
+                	if(ack.getBlockNum() != m.getBlockNum()) {
+                		throw new InvalidPacketException("Invalid Block Number");
+                	}
                 }
             }
         } catch (InvalidPacketException e) {
