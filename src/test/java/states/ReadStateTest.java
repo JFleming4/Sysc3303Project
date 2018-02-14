@@ -73,7 +73,7 @@ public class ReadStateTest {
 
             // Verify second sent request is an ACK with block #1
             inOrder.verify(socket).sendMessage(argument.capture(), Mockito.eq(connectionManagerSocketAddress));
-            Assert.assertEquals("Created Read Request Does Not Match", new String(expectedAck.toByteArray()), new String(argument.getValue().toByteArray()));
+            Assert.assertEquals("Expected ACK Message Does Not Match", new String(expectedAck.toByteArray()), new String(argument.getValue().toByteArray()));
 
             Mockito.verify(resourceManager).writeBytesToFile(FILENAME,FILE_SHORT.getBytes());
 
