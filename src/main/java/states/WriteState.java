@@ -8,13 +8,14 @@ import java.net.DatagramPacket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
+import formats.ErrorMessage;
 import formats.RequestMessage;
+import formats.ErrorMessage.ErrorType;
 import formats.Message.MessageType;
 import logging.Logger;
 import resources.ResourceManager;
@@ -42,9 +43,9 @@ public class WriteState extends State {
             ResourceManager resourceManager = new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR);
             if(!resourceManager.fileExists(filename))
                 throw new FileNotFoundException("File Not Found");
-
             socket = new TFTPDatagramSocket();
             socket.setSoTimeout(SOCKET_TIMEOUT);
+            SocketAddress recvSocketAddr = serverAddress;
 
             try {
 
@@ -59,7 +60,7 @@ public class WriteState extends State {
                 DatagramPacket recv = socket.receivePacket();
                 AckMessage ack = AckMessage.parseMessageFromPacket(recv);
                 LOG.logVerbose("Received WRQ ACK");
-
+                recvSocketAddr = recv.getSocketAddress();
                 if(ack.getBlockNum() != 0) throw new IOException("Incorrect Initial Block Number");
 
                 sendDataBlock(resourceManager.readFileToBytes(filename), recv.getSocketAddress());
@@ -70,7 +71,13 @@ public class WriteState extends State {
             } catch(UnknownHostException uHE) {
                 LOG.logQuiet("Error: Unknown Host Entered");
             } catch(IOException ioE) {
-                ioE.printStackTrace();
+            	if(ioE.getLocalizedMessage().contains("Access is denied")) {
+            		LOG.logQuiet("You do not have permissions to read this file");
+            		ErrorMessage errMsg = new ErrorMessage(ErrorType.ACCESS_VIOLATION, "You do not have the correct permissions for this file");
+            		socket.sendMessage(errMsg, recvSocketAddr);
+            	} else {
+            		ioE.printStackTrace();
+            	}      
             }
             socket.close();
         } catch (SocketException sE) {
@@ -78,10 +85,7 @@ public class WriteState extends State {
         } catch (FileNotFoundException fNFE) {
             LOG.logQuiet("Error: " + fNFE.getMessage());
         } catch (IOException ioE) {
-            if(ioE instanceof AccessDeniedException) {
-                LOG.logQuiet("You do not have the correct permisions to access this file");
-            }
-            LOG.logVerbose("IOException occurred. " + ioE.getLocalizedMessage());
+            LOG.logQuiet("IOException occurred. " + ioE.getLocalizedMessage());
         }
         return new InputState();
 	}
@@ -103,7 +107,6 @@ public class WriteState extends State {
             for(DataMessage m : messages) {
 
                 LOG.logVerbose("Block: " + m.getBlockNum() + ", Data size: " + m.getDataSize() + ", Final Block: " + m.isFinalBlock());
-
                 // Send Data block message
                 socket.sendMessage(m, socketAddress);
 

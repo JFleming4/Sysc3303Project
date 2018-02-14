@@ -1,6 +1,7 @@
 package formats;
 
 import exceptions.InvalidPacketException;
+import logging.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -11,7 +12,7 @@ import java.util.Arrays;
  * Representation of a TFTP Error Message
  */
 public class ErrorMessage extends Message {
-
+	private static final Logger LOG = new Logger("ErrorPacket");
     /**
      * Error code definitions following TFTP protocol
      */
@@ -108,6 +109,30 @@ public class ErrorMessage extends Message {
                 && this.type.equals(otherMsg.type)
                 && this.message.equals(otherMsg.message);
     }
+    
+    /**
+     * Check if a given packet is an ErrorMessage
+     * @param packet
+     * @return  true if it is an ErrorMessage false otherwise
+     */
+    public static boolean isErrorMessage(DatagramPacket packet) {
+    	try {
+    		parseMessageFromPacket(packet);
+    		return true;
+    	} catch(InvalidPacketException ipe) {
+    		return false;
+    	}
+    }
+    
+    public static void logErrorPacket(DatagramPacket packet) {
+		try {
+			ErrorMessage msg = ErrorMessage.parseMessageFromPacket(packet);
+			LOG.logQuiet(msg.getMessage());
+		} catch (InvalidPacketException e) {
+			LOG.logQuiet("Malformed Error Packet");
+			e.printStackTrace();
+		}
+	}
 
     /**
      * Creates a RequestMessage object from a packet object

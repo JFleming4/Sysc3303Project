@@ -11,6 +11,7 @@ import java.nio.file.AccessDeniedException;
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
+import formats.ErrorMessage;
 import formats.RequestMessage;
 import logging.Logger;
 import formats.Message.MessageType;
@@ -55,6 +56,10 @@ public class ReadState extends State {
 				try {
 				    // Receive read data from server
                     DatagramPacket recv = socket.receivePacket();
+                    if(ErrorMessage.isErrorMessage(recv)) {
+                    	ErrorMessage.logErrorPacket(recv);
+                    	break;
+                    }
                     DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                     LOG.logVerbose("Received data block: " + dataMessage.getBlockNum());
         
@@ -89,12 +94,6 @@ public class ReadState extends State {
 		} catch(UnknownHostException uHE) {
 			LOG.logQuiet("Error: Unknown Host Entered");
 		} catch(IOException ioE) {
-			if(ioE instanceof AccessDeniedException) {
-				LOG.logQuiet("You do not have the correct permisions to access this file");
-			}
-			// Need to query disk space available for each packet and throw an error if there
-			// is not enough space. Look into  getUsableSpace() on write place in resource manager
-			// Make custom error
 			LOG.logVerbose("An IOException has occurred: " + ioE.getLocalizedMessage());
 			ioE.printStackTrace();
 		} finally {
