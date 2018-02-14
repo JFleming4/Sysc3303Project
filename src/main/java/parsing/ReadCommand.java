@@ -1,13 +1,12 @@
 package parsing;
 
+import java.io.IOException;
+import java.util.List;
+
 import logging.Logger;
 import states.InputState;
 import states.ReadState;
 import states.State;
-
-import java.net.UnknownHostException;
-import java.nio.file.AccessDeniedException;
-import java.util.List;
 
 public class ReadCommand extends SocketCommand {
 	private static final Logger LOG = new Logger("FTPClient - Read");
@@ -15,10 +14,10 @@ public class ReadCommand extends SocketCommand {
 
 	public ReadCommand(List<String> tokens) {
 		super(READ_OPERATION, tokens);
-	}
+    }
 
 	public ReadCommand(String[] tokens) {
-		super(READ_OPERATION, tokens);
+	    super(READ_OPERATION, tokens);
 	}
 
 	@Override
@@ -29,7 +28,7 @@ public class ReadCommand extends SocketCommand {
 			try {
 
 				return new ReadState(getServerAddress(), getFilename(), isVerbose());
-			} catch (UnknownHostException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		return new InputState();

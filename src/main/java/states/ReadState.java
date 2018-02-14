@@ -5,47 +5,54 @@ import static resources.Configuration.GLOBAL_CONFIG;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.nio.file.AccessDeniedException;
 
 import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
 import formats.ErrorMessage;
+import formats.Message.MessageType;
 import formats.RequestMessage;
 import formats.ErrorMessage.ErrorType;
 import logging.Logger;
-import formats.Message.MessageType;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
 
 public class ReadState extends State {
 	private static final int SOCKET_TIMEOUT = 5000;
-	
-	private TFTPDatagramSocket socket;
+
+    private TFTPDatagramSocket socket;
+    private ResourceManager resourceManager;
 	private SocketAddress serverAddress;
 	private String filename;
-	
-	public ReadState(SocketAddress serverAddress, String filename, boolean isVerbose) {
-		this.serverAddress = serverAddress;
-		this.filename = filename;
-		if (isVerbose)
-			Logger.setLogLevel(Logger.LogLevel.VERBOSE);
-		else
-			Logger.setLogLevel(Logger.LogLevel.QUIET);
+
+	public ReadState(SocketAddress serverAddress, String filename, boolean isVerbose) throws SocketException, IOException {
+	    this(serverAddress, filename, isVerbose, new TFTPDatagramSocket(), new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR));
 	}
+
+
+	public ReadState(SocketAddress serverAddress, String filename, boolean isVerbose, TFTPDatagramSocket socket, ResourceManager resourceManager) throws SocketException {
+        this.serverAddress = serverAddress;
+        this.filename = filename;
+
+        this.socket = socket;
+        this.socket.setSoTimeout(SOCKET_TIMEOUT);
+        this.resourceManager = resourceManager;
+        if (isVerbose)
+            Logger.setLogLevel(Logger.LogLevel.VERBOSE);
+        else
+            Logger.setLogLevel(Logger.LogLevel.QUIET);
+    }
+
+
+
 
 	@Override
 	public State execute() {
 		int expBlockNum = -1;
 		SocketAddress recvSocketAddress = serverAddress;
 		try {
-			// Create the resource manager, handle IOException if failed to get resource directory
-			ResourceManager resourceManager = new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR);
-
-		    socket = new TFTPDatagramSocket();
-			socket.setSoTimeout(SOCKET_TIMEOUT);
-
 			// Set up + Send RRQ Message
             RequestMessage rrqMessage = new RequestMessage(MessageType.RRQ ,filename);
 			socket.sendMessage(rrqMessage, serverAddress);
@@ -64,7 +71,7 @@ public class ReadState extends State {
                     recvSocketAddress = recv.getSocketAddress();
                     DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
                     LOG.logVerbose("Received data block: " + dataMessage.getBlockNum());
-        
+
                     // Initialize block number to one sent from server
                     if(expBlockNum == -1)
                         expBlockNum = dataMessage.getBlockNum();
@@ -110,7 +117,7 @@ public class ReadState extends State {
 		} finally {
 			socket.close();
 		}
-		
+
 		return new InputState();
 	}
 }
