@@ -73,7 +73,7 @@ public class WriteStateTest {
 
 
             // Execute function
-            WriteState writeState = new WriteState(serverAddress, FILENAME, false, socket, resourceManager);
+            WriteState writeState = new WriteState(serverAddress, resourceManager, FILENAME, false, socket);
             writeState.execute();
 
             // Verify first sent request is a RRQ

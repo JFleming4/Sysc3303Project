@@ -2,7 +2,6 @@ package states;
 
 import static resources.Configuration.GLOBAL_CONFIG;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.SocketAddress;
@@ -10,10 +9,13 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import exceptions.InvalidPacketException;
-import formats.*;
-import formats.Message.MessageType;
+import formats.AckMessage;
+import formats.DataMessage;
+import formats.ErrorMessage;
 import formats.ErrorMessage.ErrorType;
-
+import formats.Message;
+import formats.Message.MessageType;
+import formats.RequestMessage;
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;

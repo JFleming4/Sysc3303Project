@@ -9,9 +9,6 @@ import states.State;
 import states.WriteState;
 
 
-import java.io.IOException;
-import java.util.List;
-
 public class WriteCommand extends SocketCommand {
     private static final Logger LOG = new Logger("FTPClient - Write");
 	private static final String WRITE_OPERATION = "write";

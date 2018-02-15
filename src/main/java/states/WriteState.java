@@ -1,7 +1,5 @@
 package states;
 
-import static resources.Configuration.GLOBAL_CONFIG;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -11,16 +9,16 @@ import java.net.UnknownHostException;
 import java.util.List;
 
 import exceptions.InvalidPacketException;
-import formats.*;
+import formats.AckMessage;
+import formats.DataMessage;
+import formats.ErrorMessage;
 import formats.ErrorMessage.ErrorType;
-
+import formats.Message;
 import formats.Message.MessageType;
 import formats.RequestMessage;
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
-
-import javax.annotation.Resource;
 
 public class WriteState extends State {
 
@@ -31,12 +29,12 @@ public class WriteState extends State {
 	private SocketAddress serverAddress;
 	private String filename;
 
-    public WriteState(SocketAddress serverAddress, String filename, boolean isVerbose) throws SocketException, IOException {
-        this(serverAddress, filename, isVerbose, new TFTPDatagramSocket(), new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR));
+    public WriteState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose)throws IOException {
+        this(serverAddress, resourceManager, filename, isVerbose, new TFTPDatagramSocket());
     }
 
 
-    public WriteState(SocketAddress serverAddress, String filename, boolean isVerbose, TFTPDatagramSocket socket, ResourceManager resourceManager) throws SocketException {
+    public WriteState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose, TFTPDatagramSocket socket) throws SocketException {
         this.serverAddress = serverAddress;
         this.filename = filename;
 
@@ -54,8 +52,6 @@ public class WriteState extends State {
         try {
             if(!resourceManager.fileExists(filename))
                 throw new FileNotFoundException("File Not Found");
-
-            SocketAddress recvSocketAddr = serverAddress;
 
             if(!resourceManager.fileExists(filename))
                 throw new FileNotFoundException("File (" + filename + ") Not Found");
