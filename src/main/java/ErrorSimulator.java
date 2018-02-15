@@ -1,9 +1,8 @@
-import formats.Message;
 import logging.Logger;
 import socket.TFTPDatagramSocket;
+import states.ExitState;
+import states.ForwardState;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
@@ -14,114 +13,32 @@ import static resources.Configuration.GLOBAL_CONFIG;
 
 public class ErrorSimulator extends Thread {
 	private TFTPDatagramSocket connection;
-	private InetAddress serverAddress;
-	private InetSocketAddress clientAddress;
-	private int currentServerWorkerPort;
+	private states.State state;
+	
 	private static final Logger LOG = new Logger("ErrorSimulator");
 
 	public ErrorSimulator(InetAddress serverAddress) throws SocketException {
-
 		this.connection = new TFTPDatagramSocket(GLOBAL_CONFIG.SIMULATOR_PORT);
-		this.serverAddress = serverAddress;
+		setState(new ForwardState(connection, serverAddress));
 
 		LOG.logQuiet("Listening on port " + connection.getLocalPort());
 		LOG.logQuiet("Server Address: " + serverAddress);
 	}
 
-	public DatagramPacket receivePacket() throws IOException {
-		DatagramPacket clientPacket = new DatagramPacket(new byte[Message.MAX_PACKET_SIZE], Message.MAX_PACKET_SIZE);
-		connection.receive(clientPacket);
-		LOG.logVerbose("Received Message Packet from " + clientPacket.getSocketAddress());
-		LOG.logVerbose(clientPacket);
-		return clientPacket;
-	}
-
 	public void stopServer() {
 		connection.close();
+		setState(new ExitState());
 		LOG.logQuiet("The simulator connection has been closed.");
 	}
-
-	/**
-	 * Checks to see if a request is coming from the current client.
-	 * @param addr The address to check
-	 * @param port The port to check
-	 * @return True if addr/port match current client
-	 */
-	private boolean isFromClient(InetAddress addr, int port)
-	{
-		return clientAddress != null && clientAddress.getAddress().equals(addr) && clientAddress.getPort() == port;
-	}
-
-	/**
-	 * Checks to see if a request is coming from the current server worker.
-	 * @param addr The address to check
-	 * @param port The port to check
-	 * @return True if addr/port match current server worker
-	 */
-	private boolean isFromServerWorker(InetAddress addr, int port)
-	{
-		return serverAddress != null && serverAddress.equals(addr) && currentServerWorkerPort == port;
+	
+	public void setState(states.State state) {
+		this.state = state;
 	}
 
 	@Override
 	public void run() {
-		DatagramPacket incomingPacket;
-
-		LOG.logQuiet("Error Simulator is running.");
-		while (!connection.isClosed()) {
-			try {
-				LOG.logVerbose("Waiting for request from client");
-				incomingPacket = receivePacket();
-				InetAddress incomingAddr = incomingPacket.getAddress();
-				int incomingPort = incomingPacket.getPort();
-
-				// Check to see what the source IP is
-				// If the request is not from the current client AND not from the server worker,
-				// We have a new client (and will forward this ONE packet to server port 69)
-				if(!isFromClient(incomingAddr, incomingPort) && !isFromServerWorker(incomingAddr, incomingPort))
-				{
-					LOG.logQuiet("New Client Detected.");
-					clientAddress = new InetSocketAddress(incomingPacket.getAddress(), incomingPacket.getPort());
-
-					LOG.logQuiet("Forwarding initial request to server");
-					connection.forwardPacket(incomingPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
-
-					LOG.logVerbose("Waiting for initial response from server");
-					DatagramPacket serverResponsePacket = receivePacket();
-
-					// Now we learn the server workers PORT
-					currentServerWorkerPort = serverResponsePacket.getPort();
-					LOG.logVerbose("Received server response. Worker thread port: " + currentServerWorkerPort);
-
-					// Now forward the initial response back to client
-					connection.forwardPacket(serverResponsePacket, clientAddress);
-					LOG.logQuiet("Forwarding initial response to client");
-				}
-				// If the packet is from the server worker
-				// We are going to forward the packet to the current client
-				else if(!isFromClient(incomingAddr, incomingPort) && isFromServerWorker(incomingAddr, incomingPort))
-				{
-					LOG.logQuiet("Received message from client. Forwarding to server.");
-					connection.forwardPacket(incomingPacket, clientAddress);
-				}
-				// If the packet is from the current client
-				// We are going to forward the packet to the server
-				else if(!isFromServerWorker(incomingAddr, incomingPort) && isFromClient(incomingAddr, incomingPort))
-				{
-					LOG.logQuiet("Received message from server. Forwarding to client.");
-					connection.forwardPacket(incomingPacket, serverAddress, currentServerWorkerPort);
-				}
-
-			} catch (SocketException sE)
-			{
-				// Socket closed exception
-				if(!connection.isClosed())
-					sE.printStackTrace();
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		while(true)
+			state.execute();
 	}
 
 	/**
