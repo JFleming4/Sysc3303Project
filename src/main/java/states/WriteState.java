@@ -1,7 +1,5 @@
 package states;
 
-import static resources.Configuration.GLOBAL_CONFIG;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -13,38 +11,40 @@ import java.util.List;
 import exceptions.InvalidPacketException;
 import formats.*;
 import formats.ErrorMessage.ErrorType;
-
 import formats.Message.MessageType;
+import formats.RequestMessage;
 import logging.Logger;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
 
-import javax.annotation.Resource;
-
 public class WriteState extends State {
-
 	private static final int SOCKET_TIMEOUT = 5000;
-	
 	private TFTPDatagramSocket socket;
-	private SocketAddress serverAddress;
 	private ResourceManager resourceManager;
+	private SocketAddress serverAddress;
 	private String filename;
-	
-	public WriteState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose) {
-		this.serverAddress = serverAddress;
-		this.resourceManager = resourceManager;
-		this.filename = filename;
-		if (isVerbose)
-			Logger.setLogLevel(Logger.LogLevel.VERBOSE);
-		else
-			Logger.setLogLevel(Logger.LogLevel.QUIET);
-	}
+
+    public WriteState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose)throws IOException {
+        this(serverAddress, resourceManager, filename, isVerbose, new TFTPDatagramSocket());
+    }
+
+
+    public WriteState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose, TFTPDatagramSocket socket) throws IOException {
+        this.serverAddress = serverAddress;
+        this.filename = filename;
+
+        this.socket = socket;
+        this.socket.setSoTimeout(SOCKET_TIMEOUT);
+        this.resourceManager = resourceManager;
+        if (isVerbose)
+            Logger.setLogLevel(Logger.LogLevel.VERBOSE);
+        else
+            Logger.setLogLevel(Logger.LogLevel.QUIET);
+    }
 
 	@Override
 	public State execute() {
-	    try {
-            socket = new TFTPDatagramSocket();
-            socket.setSoTimeout(SOCKET_TIMEOUT);
+        try {
 
             if(!resourceManager.fileExists(filename))
                 throw new FileNotFoundException("File (" + filename + ") Not Found");
@@ -155,13 +155,8 @@ public class WriteState extends State {
     }
 
     /**
-<<<<<<< HEAD
      * Handle a received error message
      * @param recv DatagramPacket to be received
-=======
-     *
-     * @param recv
->>>>>>> 38335e4b46a4d2755bd9bcc470a5681073ae8b7c
      * @throws InvalidPacketException
      */
     private void handleErrorMessage(DatagramPacket recv) throws InvalidPacketException {

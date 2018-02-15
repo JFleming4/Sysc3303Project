@@ -13,11 +13,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import formats.AckMessage;
-import formats.DataMessage;
-import formats.Message;
+import formats.*;
 import formats.Message.MessageType;
-import formats.RequestMessage;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
 
@@ -73,7 +70,7 @@ public class ReadStateTest {
 
             // Verify second sent request is an ACK with block #1
             inOrder.verify(socket).sendMessage(argument.capture(), Mockito.eq(connectionManagerSocketAddress));
-            Assert.assertEquals("Created Read Request Does Not Match", new String(expectedAck.toByteArray()), new String(argument.getValue().toByteArray()));
+            Assert.assertEquals("Expected ACK Message Does Not Match", new String(expectedAck.toByteArray()), new String(argument.getValue().toByteArray()));
 
             Mockito.verify(resourceManager).writeBytesToFile(FILENAME,FILE_SHORT.getBytes());
 

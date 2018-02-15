@@ -5,9 +5,7 @@ import states.InputState;
 import states.State;
 import states.WriteState;
 
-
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.List;
 
 public class WriteCommand extends SocketCommand {
@@ -21,7 +19,7 @@ public class WriteCommand extends SocketCommand {
 	public WriteCommand(String[] tokens) throws IOException {
 		super(WRITE_OPERATION, tokens);
 	}
-	
+
 	@Override
 	public State execute() {
 		if (this.tokens.size() < 3)
@@ -29,7 +27,7 @@ public class WriteCommand extends SocketCommand {
 		else
 			try {
 				return new WriteState(getServerAddress(), resourceManager, getFilename(), isVerbose());
-			} catch (UnknownHostException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		return new InputState();
