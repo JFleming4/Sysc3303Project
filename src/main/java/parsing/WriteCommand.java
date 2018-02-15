@@ -1,13 +1,12 @@
 package parsing;
 
-import java.io.IOException;
-import java.util.List;
-
 import logging.Logger;
 import states.InputState;
 import states.State;
 import states.WriteState;
 
+import java.io.IOException;
+import java.util.List;
 
 public class WriteCommand extends SocketCommand {
     private static final Logger LOG = new Logger("FTPClient - Write");

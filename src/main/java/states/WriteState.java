@@ -21,9 +21,7 @@ import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
 
 public class WriteState extends State {
-
 	private static final int SOCKET_TIMEOUT = 5000;
-
 	private TFTPDatagramSocket socket;
 	private ResourceManager resourceManager;
 	private SocketAddress serverAddress;
@@ -34,7 +32,7 @@ public class WriteState extends State {
     }
 
 
-    public WriteState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose, TFTPDatagramSocket socket) throws SocketException {
+    public WriteState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose, TFTPDatagramSocket socket) throws IOException {
         this.serverAddress = serverAddress;
         this.filename = filename;
 
@@ -50,8 +48,6 @@ public class WriteState extends State {
 	@Override
 	public State execute() {
         try {
-            if(!resourceManager.fileExists(filename))
-                throw new FileNotFoundException("File Not Found");
 
             if(!resourceManager.fileExists(filename))
                 throw new FileNotFoundException("File (" + filename + ") Not Found");
