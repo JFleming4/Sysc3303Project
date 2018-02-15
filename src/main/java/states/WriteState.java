@@ -155,18 +155,13 @@ public class WriteState extends State {
     }
 
     /**
-<<<<<<< HEAD
      * Handle a received error message
      * @param recv DatagramPacket to be received
-=======
-     *
-     * @param recv
->>>>>>> 38335e4b46a4d2755bd9bcc470a5681073ae8b7c
      * @throws InvalidPacketException
      */
     private void handleErrorMessage(DatagramPacket recv) throws InvalidPacketException {
         ErrorMessage errorMessage = ErrorMessage.parseMessageFromPacket(recv);
-        LOG.logVerbose("Received error (" + errorMessage.getErrorType() + ") with message: " + errorMessage.getMessage());
+        LOG.logQuiet("Received error (" + errorMessage.getErrorType() + ") with message: " + errorMessage.getMessage());
 
         // Determine the Type of the ErrorMessage
         switch (errorMessage.getErrorType()) {
