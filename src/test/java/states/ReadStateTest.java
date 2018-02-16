@@ -61,7 +61,7 @@ public class ReadStateTest {
             Mockito.when(socket.receivePacket()).thenReturn(new DatagramPacket(mockedData.toByteArray(), mockedData.toByteArray().length, connectionManagerSocketAddress));
 
             // Execute function
-            ReadState readState = new ReadState(serverAddress, FILENAME, false, socket, resourceManager);
+            ReadState readState = new ReadState(serverAddress, resourceManager, FILENAME, false, socket);
             readState.execute();
 
             // Verify first sent request is a RRRQ
