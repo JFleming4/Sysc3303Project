@@ -267,7 +267,6 @@ class ServerWorker extends Thread {
 			byte [] fileBytes = resourceManager.readFileToBytes(message.getFileName());
 			sendDataBlock(fileBytes);
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
 			if (e.getLocalizedMessage().contains("Access is denied") || e.getLocalizedMessage().contains("Permission denied"))
 			{
 				LOG.logQuiet("You do not have permissions to read this file");
