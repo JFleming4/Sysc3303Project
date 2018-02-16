@@ -28,7 +28,7 @@ public class ReadCommand extends SocketCommand {
 		else
 			try {
 
-				return new ReadState(getServerAddress(), getFilename(), isVerbose());
+				return new ReadState(getServerAddress(), resourceManager, getFilename(), isVerbose());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

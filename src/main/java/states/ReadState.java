@@ -28,12 +28,12 @@ public class ReadState extends State {
     private int expBlockNum;
     private boolean isConsentual;
 
-    public ReadState(SocketAddress serverAddress, String filename, boolean isVerbose) throws SocketException, IOException {
-        this(serverAddress, filename, isVerbose, new TFTPDatagramSocket(), new ResourceManager(GLOBAL_CONFIG.CLIENT_RESOURCE_DIR));
+    public ReadState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose) throws SocketException, IOException {
+        this(serverAddress, resourceManager, filename, isVerbose, new TFTPDatagramSocket());
     }
 
 
-    public ReadState(SocketAddress serverAddress, String filename, boolean isVerbose, TFTPDatagramSocket socket, ResourceManager resourceManager) throws SocketException {
+    public ReadState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose, TFTPDatagramSocket socket) throws SocketException {
         this.serverAddress = serverAddress;
         this.filename = filename;
 
