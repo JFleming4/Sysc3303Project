@@ -1,10 +1,13 @@
 package states;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,6 +15,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.mockito.stubbing.OngoingStubbing;
 
 import formats.*;
 import formats.Message.MessageType;
@@ -19,73 +23,159 @@ import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
 
 public class WriteStateTest {
-
-	private static final String FILENAME = "file.txt";
-    private static final String FILE_SHORT = "Hello World";
-    private static final String SERVER_HOST = "localhost";
-
 	private TFTPDatagramSocket socket;
 	private ResourceManager resourceManager;
     private InetSocketAddress serverAddress;
     private InetSocketAddress connectionManagerSocketAddress;
+    private InOrder inOrder;
 
 	@Before
 	public void setUp() {
 	    socket = Mockito.mock(TFTPDatagramSocket.class);
 	    resourceManager = Mockito.mock(ResourceManager.class);
         try {
-            serverAddress = new InetSocketAddress(InetAddress.getByName(SERVER_HOST), 69);
-            connectionManagerSocketAddress = new InetSocketAddress(InetAddress.getByName(SERVER_HOST), 1069);
+            serverAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 69);
+            connectionManagerSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+        inOrder = Mockito.inOrder(socket);
 	}
 
-	@Test
-	public void shortWriteRequestSuccess() {
-	    try {
+    @Test
+    public void WriteLessThan512BytesSuccess() {
+        this.RunWriteTestByFileLength(256);
+    }
 
-	        // Expected WRQ Ack block num
-            int mockAckBlockNum = 0;
+    @Test
+    public void Write512BytesSuccess() {
+        this.RunWriteTestByFileLength(512);
+    }
 
-            // Mocked and expected Messages to be passed in 1 block read file transfer
-            RequestMessage expectedWRQ = new RequestMessage(MessageType.WRQ,FILENAME);
-            AckMessage mockedAckRequest = new AckMessage(mockAckBlockNum);
-            DatagramPacket mockedAckRequestPacket = new DatagramPacket(mockedAckRequest.toByteArray(), mockedAckRequest.toByteArray().length, connectionManagerSocketAddress);
-            DataMessage expectedData = new DataMessage(mockAckBlockNum+1,FILE_SHORT.getBytes());
-            AckMessage mockedAckData = new AckMessage(mockAckBlockNum+1);
-            DatagramPacket mockedAckDataPacket = new DatagramPacket(mockedAckData.toByteArray(), mockedAckData.toByteArray().length, connectionManagerSocketAddress);
+    @Test
+    public void Write1024BytesSuccess() {
+        this.RunWriteTestByFileLength(1024);
+    }
 
-            // Mock mechanism to capture arguments in order
-            InOrder inOrder = Mockito.inOrder(socket);
-            ArgumentCaptor <Message> argument = ArgumentCaptor.forClass(Message.class);
+    @Test
+    public void WriteMoreThan1024BytesSuccess() {
+        this.RunWriteTestByFileLength(-1);
+    }
 
-            // Return the mock Ack Packet to WRQ on first call, return mock Ack to Data Message on second call
-            Mockito.when(socket.receivePacket())
-                .thenReturn(mockedAckRequestPacket)
-                .thenReturn(mockedAckDataPacket);
-            // Return proper
-            Mockito.when(resourceManager.fileExists(FILENAME)).thenReturn(true);
-            Mockito.when(resourceManager.readFileToBytes(FILENAME)).thenReturn(FILE_SHORT.getBytes());
+    @Test
+    public void FileNotFoundError() {
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outStream));
 
+        try {
+            byte[] expectedWRQBytes = new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
+            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(false);
 
             // Execute function
-            WriteState writeState = new WriteState(serverAddress, resourceManager, FILENAME, false, socket);
-            writeState.execute();
+            new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
+            Mockito.verify(socket, Mockito.times(0)).send( new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, serverAddress));
+            Mockito.verify(socket, Mockito.times(0)).receivePacket();
+            Mockito.verify(resourceManager, Mockito.times(0)).readFileToBytes(StateTestConfig.FILENAME);
 
-            // Verify first sent request is a RRQ
-            inOrder.verify(socket).sendMessage(argument.capture(), Mockito.eq(serverAddress));
-            Assert.assertEquals("Created Write Request Does Not Match", new String(expectedWRQ.toByteArray()), new String(argument.getValue().toByteArray()));
-
-            // Verify second sent request is an ACK with block #1
-            inOrder.verify(socket).sendMessage(argument.capture(), Mockito.eq(connectionManagerSocketAddress));
-            Assert.assertEquals("Expected DATA Message Does Not Match", new String(expectedData.toByteArray()), new String(argument.getValue().toByteArray()));
-
-            Mockito.verify(socket, Mockito.times(2)).receivePacket();
-            Mockito.verify(resourceManager).readFileToBytes((FILENAME));
-
-        } catch ( IOException e) {
+            // Ensure Message is displayed to the user
+            Assert.assertTrue("File Not Found User Message Not Found", outStream.toString().contains("File (" + StateTestConfig.FILENAME + ") Not Found"));
+        }
+         catch (IOException e) {
             Assert.fail(e.getMessage());
         }
-	}
+
+        System.setOut(System.out);
+    }
+
+
+    @Test
+    public void FileAlreadyExistsOnServerError() {
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outStream));
+
+        try {
+            ArgumentCaptor<RequestMessage> requestArgument = ArgumentCaptor.forClass(RequestMessage.class);
+
+            byte[] expectedWRQBytes = new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
+            String expectedErrorMessage = "File (" + StateTestConfig.FILENAME + ") already exists on the Server.";
+            byte[] mockResponseErrorBytes = new ErrorMessage(ErrorMessage.ErrorType.FILE_EXISTS, expectedErrorMessage).toByteArray();
+
+            Mockito.when(socket.receivePacket()).thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
+
+            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(true);
+            Mockito.when(resourceManager.readFileToBytes(StateTestConfig.FILENAME)).thenReturn(StateTestConfig.FILENAME.getBytes());
+
+            // Execute function
+            new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, true, socket).execute();
+
+            inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
+            Assert.assertEquals("Created Write Request Does Not Match", new String(expectedWRQBytes), new String(requestArgument.getValue().toByteArray()));
+
+            Mockito.verify(socket, Mockito.times(1)).receivePacket();
+
+            // Ensure Message is displayed to the user
+            Assert.assertTrue("File Not Found User Message Not Found", outStream.toString().contains(expectedErrorMessage));
+        }
+         catch (IOException e) {
+            Assert.fail(e.getMessage());
+        }
+        System.setOut(System.out);
+    }
+
+    public void RunWriteTestByFileLength(int length) {
+        try {
+            ArgumentCaptor<RequestMessage> requestArgument = ArgumentCaptor.forClass(RequestMessage.class);
+            ArgumentCaptor<DataMessage> dataArgument = ArgumentCaptor.forClass(DataMessage.class);
+
+            // Expected Request for write file transfer
+            byte[] expectedWRQBytes = new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
+
+            // Create mock File Data messages
+            String mockFile = length != -1 ? StateTestConfig.FILE_STRING.substring(0, length - 1) : StateTestConfig.FILE_STRING;
+            Mockito.when(resourceManager.readFileToBytes(StateTestConfig.FILENAME)).thenReturn(mockFile.getBytes());
+            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(true);
+
+
+            // Create response Ack Messages from the data message sequence on receivePacket
+
+            List<DataMessage> mockedDataSequence = DataMessage.createDataMessageSequence(mockFile.getBytes());
+            // build first response as the ack with block 0
+            AckMessage mockResponseAckInitial = new AckMessage(0);
+            AckMessage mockResponseAck = new AckMessage(mockedDataSequence.get(0).getBlockNum());
+            OngoingStubbing<DatagramPacket> mockResponseBuilder = Mockito.when(socket.receivePacket())
+                    .thenReturn( new DatagramPacket(mockResponseAckInitial.toByteArray(), mockResponseAckInitial.toByteArray().length, connectionManagerSocketAddress));
+
+            // build rest of the responses
+            for (DataMessage dataMessage : mockedDataSequence) {
+                mockResponseAck = new AckMessage(dataMessage.getBlockNum());
+                mockResponseBuilder.thenReturn(new DatagramPacket(mockResponseAck.toByteArray(), mockResponseAck.toByteArray().length, connectionManagerSocketAddress));
+            }
+
+            // Execute function
+            new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
+
+            // Verify number of requests received
+            Mockito.verify(socket, Mockito.times(mockedDataSequence.size() + 1)).receivePacket();
+
+            // Verify first sent request is a WRQ
+            inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
+            Assert.assertEquals("Created Write Request Does Not Match", new String(expectedWRQBytes), new String(requestArgument.getValue().toByteArray()));
+
+            // Verify sent request is an DATA Message with same block number
+            for(DataMessage dataMessage : mockedDataSequence) {
+                inOrder.verify(socket).sendMessage(dataArgument.capture(), Mockito.eq(connectionManagerSocketAddress));
+                Assert.assertEquals(
+                        "Expected DATA Message with Block " + dataMessage.getBlockNum() + " Does Not Match",
+                        dataMessage.getBlockNum(),
+                        dataArgument.getValue().getBlockNum()
+                );
+            }
+
+            // verify resourceManager was called
+            Mockito.verify(resourceManager).readFileToBytes((StateTestConfig.FILENAME));
+
+        } catch (IOException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
 }
