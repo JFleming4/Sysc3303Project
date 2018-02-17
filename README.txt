@@ -1,33 +1,31 @@
-﻿SYSC 3303 Iteration 1
-=====================
+﻿SYSC 3303 Iteration 2
+======================
+
 
 Team contribution breakdown:
-=====================
+============================
 Justin Fleming: 100934170
-    - FTPServer Iteration 0
+    - Handle IO Errors
 Noah Segal: 100911661
-    - UCM and UML Diagrams
+    - Handle IO Errors
 Derek Stride: 100955939
-    - FTPClient Iteration 0 + Testing
-    - ErrorSimulator
-    - Simple Logger
+    - Refactor to introduce state-based behaviour
 Michael Vezina: 100934579
-    - Message Classes and Testing Suite
-    - Refactoring FTPServer, TFTPDatagramSocket, ErrorSimulator
+    - UML & Timing Diagrams
 Irusha Vidanamadura: 100935300
-    - Steady-state read/write data transfer and File I/O
-    - TFTPDatagramSocket wrapper
+    - Testing & Integration
+
 
 Setup Instructions:
-=====================
-To run the project you need to import the source files into eclipse and compile the project.
+===================
+To run the project you need to import the source files into Eclipse and compile the project.
 
-To start the project run the class FTPServer, you can enter `help` into the command line interface to view the available options.
+To start the project run the class FTPServer. Enter `help` into the command line interface to view the available options.
 
 [ Optional Step - Error Simulator ]
 Start the Error Simulator by running the class ErrorSimulator. This is REQUIRED to use the -t (test) option when sending requests from the client, otherwise the request will fail.
 
-Next, start the client by running the class FTPClient, again you can enter `help` into the command line interface to view the available options.
+Next, start the client by running the class FTPClient. Again, you can enter `help` into the command line interface to view the available options.
 
 Run the following commands to test reading and writing to the server. You can add the `-v` flag to enable verbose logging and
 `-t` to enable the error simulator for that transfer (the Error Simulator must be running - see the optional step above).
@@ -35,50 +33,74 @@ Run the following commands to test reading and writing to the server. You can ad
 read read-test.txt localhost
 write write-test.txt localhost
 
-To test file permissions open up the the resources file and remove the permissions of either the file in the server folder or file in client folder.
-- for testing permissions on server:
-	read read-test.txt localhost
-- for testing permissions on client
-	write write-test.txt localhost
 
-To test disk full run the project code from a full disk (i.e. memory stick) both operations should still give you the disk full error
-- for testing disk full  on server
-	write write-test.txt loaclhost
-- for testing disk full on client
-	read read-test.txt localhost
+Error Testing:
+==============
+ACCESS VIOLATION:
+- Remove the read and write permissions on either file in /resources/server or /resources/client
+- Testing the Server:
+	- 'read read-test.txt localhost'
+- Testing the Client:
+	- 'write write-test.txt localhost'
+	
+FILE NOT FOUND:
+- Testing the Server:
+	- Delete read-test.txt from /resources/server
+	- 'read read-test.txt localhost'
+- Testing the Client:
+	- Delete write-test.txt from /resources/client
+	- 'write write-test.txt localhost'
+
+DISK FULL:
+- Run the the code from a full disk (i.e. memory stick or small partition). Both operations will result in a disk full error
+- Testing the Server:
+	- 'write write-test.txt localhost'
+- Testing the Client:
+	- 'read read-test.txt localhost'
+	
+FILE ALREADY EXISTS:
+- Testing the Server:
+	- 'write write-test.txt localhost' (first attempt, which creates the file)
+	- 'write write-test.txt localhost' (second attempt, which returns an error)
+- Testing the Client:
+	- 'read read-test.txt localhost' (first attempt, which creates te file)
+	- 'read read-test.txt localhost' (second attempt, which returns an error)
 
 
 Test File Locations:
-=====================
+====================
 The locations for reading and writing are listed under the `resources` folder.
-- `resources/client` for files on the client
-- `resources/server` for files on the server
+- Client Files: `resources/client`
+- Server Fies: `resources/server`
 
-You can place files there and trying reading to the client folder or writing to the server folder. 
+You can place files there and try to read to the client or write to the server. 
 
 
 Diagrams:
-=====================
-The diagrams will be in resources folder. They will contain
+=========
+Diagrams are located in the resources folder. They contain:
 - UCM for Read File transfer
 - UCM for Write File transfer
 - UML Diagram
+- Timing Diagrams for Errors
 
-Project Structure
-=====================
+
+Project Structure:
+==================
 /src/main/java/
-    - FTPClient.java - The Java Client
-    - FTPServer.java - The Java server
-    - components/ErrorSimulator.java - The Error Simulator
-    - exceptions/ - projects specific exceptions for invalid packet and invalid commands
+    - exceptions/ - Projects specific exceptions for invalid packet and invalid commands
     - formats/ - All the message types that are involved in the TFTP protocol
     - logging/ - Simple logger
-    - parsing/ - FTPClient command line interface actions separated by command 
+    - parsing/ - FTPClient command line interface actions separated by command
+    - resources/ - Contains class for file i/o
     - socket/TFTPDatagramSocket.java - A wrapper around DatagramSocket for ease of use
-    - resources/ - contains class for file i/o
+    - states/ - State behaviour for reading, writing, input, and exiting
+    - ErrorSimulator.java - The Error Simulator
+    - FTPClient.java - The Java Client
+    - FTPServer.java - The Java server
 /src/test/java/
     - formats/ - Message Testing suite
     - parsing/ - Client Command tests
 /resources/client - The directory where the client looks for reads/writes
 /resources/server - The directory where the server looks for reads/writes
-/resources/diagrams - The Diagrams needed for iteration
+/resources/diagrams - The diagrams required for this iteration
