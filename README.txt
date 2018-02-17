@@ -1,4 +1,4 @@
-SYSC 3303 Iteration 1
+﻿SYSC 3303 Iteration 1
 =====================
 
 Team contribution breakdown:
@@ -34,6 +34,18 @@ Run the following commands to test reading and writing to the server. You can ad
 
 read read-test.txt localhost
 write write-test.txt localhost
+
+To test file permissions open up the the resources file and remove the permissions of either the file in the server folder or file in client folder.
+- for testing permissions on server:
+	read read-test.txt localhost
+- for testing permissions on client
+	write write-test.txt localhost
+
+To test disk full run the project code from a full disk (i.e. memory stick) both operations should still give you the disk full error
+- for testing disk full  on server
+	write write-test.txt loaclhost
+- for testing disk full on client
+	read read-test.txt localhost
 
 
 Test File Locations:
