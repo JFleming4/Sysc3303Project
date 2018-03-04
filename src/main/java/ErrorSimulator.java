@@ -18,11 +18,15 @@ public class ErrorSimulator extends Thread {
 	private static final Logger LOG = new Logger("ErrorSimulator");
 
 	public ErrorSimulator(InetAddress serverAddress) throws SocketException {
-		this.connection = new TFTPDatagramSocket(GLOBAL_CONFIG.SIMULATOR_PORT);
-		setState(new ForwardState(connection, serverAddress));
-
+		this(new TFTPDatagramSocket(GLOBAL_CONFIG.SIMULATOR_PORT));
+	}
+	
+	public ErrorSimulator(TFTPDatagramSocket socket) {
+		this.connection = socket;
+		setState(new ForwardState(connection, connection.getInetAddress()));
+		
 		LOG.logQuiet("Listening on port " + connection.getLocalPort());
-		LOG.logQuiet("Server Address: " + serverAddress);
+		LOG.logQuiet("Server Address: " + connection.getInetAddress());
 	}
 
 	public void stopServer() {
