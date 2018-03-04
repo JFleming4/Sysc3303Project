@@ -56,9 +56,9 @@ public class DuplicateStateTest {
 			checker = new ErrorChecker(MessageType.RRQ);
 			state.setErrorChecker(checker);
 			byte[] expectedRRQBytes = new RequestMessage(MessageType.RRQ, StateTestConfig.FILENAME).toByteArray();
-			byte[] expectedWRQBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
+			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
 			DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, connectionManagerSocketAddress);
-			DatagramPacket serverResponse = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, connectionManagerSocketAddress);
+			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
 			Mockito.when(socket.receivePacket())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
@@ -77,10 +77,10 @@ public class DuplicateStateTest {
 		try {
 			checker = new ErrorChecker(MessageType.WRQ);
 			state.setErrorChecker(checker);
-			byte[] expectedRRQBytes = new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
-			byte[] expectedWRQBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
-			DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, connectionManagerSocketAddress);
-			DatagramPacket serverResponse = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, connectionManagerSocketAddress);
+			byte[] expectedWRQBytes = new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
+			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
+			DatagramPacket expectedPacket = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, connectionManagerSocketAddress);
+			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
 			Mockito.when(socket.receivePacket())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
@@ -96,9 +96,24 @@ public class DuplicateStateTest {
 	
 	@Test
 	public void testDuplicateData() {
-		checker = new ErrorChecker(MessageType.DATA);
-		state.setErrorChecker(checker);
-		fail();
+		try {
+			checker = new ErrorChecker(MessageType.DATA, 1);
+			state.setErrorChecker(checker);
+			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
+			byte[] expectedACKBytes = new AckMessage(1).toByteArray();
+			DatagramPacket expectedPacket = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
+			DatagramPacket serverResponse = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, connectionManagerSocketAddress);
+			Mockito.when(socket.receivePacket())
+				.thenReturn(expectedPacket)
+				.thenReturn(serverResponse)
+				.thenThrow(new RuntimeException("TEST EXCEPTION"));
+			
+			state.execute();
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.any(Integer.class));
+					
+		} catch (IOException e) {
+            Assert.fail(e.getMessage());
+        }
 	}
 	
 	@Test
