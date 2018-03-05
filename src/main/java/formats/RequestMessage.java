@@ -103,8 +103,8 @@ public class RequestMessage extends Message {
      * @return The RequestMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static RequestMessage parseMessageFromPacket(DatagramPacket packet) throws InvalidPacketException {
-        return parseMessageFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
+    public static RequestMessage parseMessage(DatagramPacket packet) throws InvalidPacketException {
+        return parseMessage(Arrays.copyOf(packet.getData(), packet.getLength()));
     }
 
     /**
@@ -113,7 +113,7 @@ public class RequestMessage extends Message {
      * @return The RequestMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static RequestMessage parseMessageFromBytes(byte[] packet) throws InvalidPacketException {
+    public static RequestMessage parseMessage(byte[] packet) throws InvalidPacketException {
         // A minimum size of 4 assumes that the packet contains the two byte opcode, and two zeros (one
         // for terminating file name, and one for terminating mode - where file name and mode are empty)
         if (packet.length < 4)
@@ -135,7 +135,7 @@ public class RequestMessage extends Message {
 
         // Request type must be valid to continue
         if (!MessageType.isRequestType(type))
-            throw new InvalidPacketException("Invalid message type. Must be RRQ or WRQ. Actual: " + requestType);
+            throw new InvalidPacketException("Invalid message type. Must be RRQ or WRQ. Actual: " + type);
 
         // Read filename from bytes
         String fileName = readStringFromBytes(packet, ptr);
@@ -154,5 +154,20 @@ public class RequestMessage extends Message {
             throw new InvalidPacketException("Packet length is too long. There should be no data after the 0 following the mode. Number of extra bytes: " + (packet.length - ptr));
 
         return new RequestMessage(type, fileName, mode);
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append("File Name: ");
+        builder.append(getFileName());
+        builder.append(System.lineSeparator());
+
+        builder.append("File Mode: ");
+        builder.append(getMode());
+        builder.append(System.lineSeparator());
+
+        return super.toString() + builder.toString();
     }
 }

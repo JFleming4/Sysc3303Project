@@ -96,6 +96,9 @@ public abstract class SocketCommand extends Command {
 	}
 	
 	private InetSocketAddress serverAddress() throws UnknownHostException {
+		if(tokens.size() <= SERVER_ADDR_IDX)
+			return new InetSocketAddress(InetAddress.getLocalHost(), GLOBAL_CONFIG.SERVER_PORT);
+
 		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), GLOBAL_CONFIG.SERVER_PORT);
 	}
 }

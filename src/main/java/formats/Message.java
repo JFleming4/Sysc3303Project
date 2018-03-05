@@ -5,6 +5,7 @@ import logging.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
 
 
 public abstract class Message {
@@ -155,5 +156,34 @@ public abstract class Message {
         }
 
         return stringBuilder.toString();
+    }
+
+    public static Message parseGenericMessage(DatagramPacket packet) throws InvalidPacketException
+    {
+        return parseGenericMessage(packet.getData());
+    }
+
+    public static Message parseGenericMessage(byte[] data) throws InvalidPacketException
+    {
+        switch (Message.getMessageType(data))
+        {
+            case RRQ:
+            case WRQ:
+                return RequestMessage.parseMessage(data);
+            case DATA:
+                return DataMessage.parseMessage(data);
+            case ACK:
+                return AckMessage.parseMessage(data);
+            case ERROR:
+            default:
+                return ErrorMessage.parseMessage(data);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        MessageType type = getMessageType();
+        return "Message Type: " +  type + " (" + type.getType() + ")\n";
     }
 }

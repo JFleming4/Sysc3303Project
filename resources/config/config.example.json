@@ -1,7 +1,7 @@
 {
   "DEBUG_MODE": false,
-  "SERVER_PORT": 69,
-  "SIMULATOR_PORT": 23,
+  "SERVER_PORT": 8069,
+  "SIMULATOR_PORT": 8023,
   "SERVER_RESOURCE_DIR": "server",
   "CLIENT_RESOURCE_DIR": "client"
 }

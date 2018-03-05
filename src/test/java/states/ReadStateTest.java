@@ -1,6 +1,7 @@
 package states;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.DatagramPacket;
@@ -20,12 +21,15 @@ import org.mockito.stubbing.OngoingStubbing;
 import formats.*;
 import formats.ErrorMessage.ErrorType;
 import formats.Message.MessageType;
+import resources.ResourceFile;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
 
 public class ReadStateTest {
 	private TFTPDatagramSocket socket;
 	private ResourceManager resourceManager;
+	private ResourceFile mockedFile;
+    private File mockedParentFile;
     private InetSocketAddress serverAddress;
     private InetSocketAddress connectionManagerSocketAddress;
     private InOrder inOrder;
@@ -34,6 +38,9 @@ public class ReadStateTest {
 	public void setUp() {
 	    socket = Mockito.mock(TFTPDatagramSocket.class);
 	    resourceManager = Mockito.mock(ResourceManager.class);
+	    mockedFile = Mockito.mock(ResourceFile.class);
+        mockedParentFile = Mockito.mock(File.class);
+
         try {
             serverAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 69);
             connectionManagerSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
@@ -41,8 +48,27 @@ public class ReadStateTest {
             e.printStackTrace();
         }
         // Mock mechanism to capture arguments in order
-        inOrder = Mockito.inOrder(socket, resourceManager);
+        inOrder = Mockito.inOrder(socket, mockedFile);
 
+        try {
+            // Set up mocked file
+            Mockito.when(mockedFile.exists()).thenReturn(StateTestConfig.READ_FILE_EXISTS);
+            Mockito.when(mockedFile.getParentFile()).thenReturn(mockedParentFile);
+            Mockito.when(mockedFile.canWrite()).thenReturn(StateTestConfig.READ_FILE_CAN_WRITE);
+            Mockito.when(mockedFile.createNewFile()).thenReturn(StateTestConfig.CREATE_NEW_FILE_RETURN);
+            Mockito.when(mockedFile.getUsableSpace()).thenReturn(StateTestConfig.USABLE_SPACE);
+            Mockito.when(mockedFile.isFile()).thenReturn(StateTestConfig.IS_FILE);
+
+            // Set up mocked parent file
+            Mockito.when(mockedParentFile.exists()).thenReturn(StateTestConfig.PARENT_DIRECTORY_EXISTS);
+
+            // Set up resource manager mock
+            Mockito.when(resourceManager.getFile(StateTestConfig.FILENAME)).thenReturn(mockedFile);
+            Mockito.when(resourceManager.isValidResource(StateTestConfig.FILENAME)).thenReturn(StateTestConfig.IS_VALID_RESOURCE);
+        }catch (IOException ioE)
+        {
+            Assert.fail(ioE.getMessage());
+        }
 	}
 
 	@Test
@@ -75,10 +101,10 @@ public class ReadStateTest {
             ArgumentCaptor<RequestMessage> requestArgument = ArgumentCaptor.forClass(RequestMessage.class);
 
             byte[] expectedRRQBytes = new RequestMessage(MessageType.RRQ, StateTestConfig.FILENAME).toByteArray();
-            String expectedErrorMessage = "Sorry, but " + StateTestConfig.FILENAME + " doesn't exist on the Server";
+            String expectedErrorMessage = StateTestConfig.FILENAME + " Not Found";
 
             byte[] mockResponseErrorBytes = new ErrorMessage(ErrorMessage.ErrorType.FILE_NOT_FOUND, "Requested File: " + StateTestConfig.FILENAME + " Not Found").toByteArray();
-            Mockito.when(socket.receivePacket()).thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
+            Mockito.when(socket.receive()).thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
 
             // Execute function
             new ReadState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
@@ -86,8 +112,8 @@ public class ReadStateTest {
             inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
             Assert.assertEquals("Created Read Request Does Not Match", new String(expectedRRQBytes), new String(requestArgument.getValue().toByteArray()));
 
-            Mockito.verify(socket, Mockito.times(1)).receivePacket();
-            Mockito.verify(resourceManager, Mockito.times(0)).writeBytesToFile(Mockito.eq(StateTestConfig.FILENAME), Mockito.any(byte[].class));
+            Mockito.verify(socket, Mockito.times(1)).receive();
+            Mockito.verify(mockedFile, Mockito.times(0)).writeBytesToFile(Mockito.any(byte[].class));
 
             // Ensure Message is displayed to the user
             Assert.assertTrue("File Not Found User Message Not Found", outStream.toString().contains(expectedErrorMessage));
@@ -111,8 +137,8 @@ public class ReadStateTest {
             String expectedErrorMessage = "You do not have the correct permissions for this file";
             byte[] mockResponseErrorBytes  = new ErrorMessage(ErrorType.ACCESS_VIOLATION, expectedErrorMessage).toByteArray();
 
-            Mockito.when(socket.receivePacket()).thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
-            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(false);
+            Mockito.when(socket.receive()).thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
+            Mockito.when(mockedFile.exists()).thenReturn(false);
 
             // Execute function
             new ReadState(serverAddress, resourceManager, StateTestConfig.FILENAME, true, socket).execute();
@@ -120,7 +146,7 @@ public class ReadStateTest {
             inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
             Assert.assertEquals("Created Read Request Does Not Match", new String(expectedRRQBytes), new String(requestArgument.getValue().toByteArray()));
 
-            Mockito.verify(socket, Mockito.times(1)).receivePacket();
+            Mockito.verify(socket, Mockito.times(1)).receive();
 
             // Ensure Message is displayed to the user
             Assert.assertTrue("Permission Error User Message Not Found", outStream.toString().contains(expectedErrorMessage));
@@ -144,7 +170,7 @@ public class ReadStateTest {
             RequestMessage expectedRRQ = new RequestMessage(MessageType.RRQ, StateTestConfig.FILENAME);
 
             // Return the mock response on receivePacket
-            OngoingStubbing<DatagramPacket> mockResponseBuilder = Mockito.when(socket.receivePacket())
+            OngoingStubbing<DatagramPacket> mockResponseBuilder = Mockito.when(socket.receive())
                     .thenReturn(new DatagramPacket(mockedDataSequence.get(0).toByteArray(), mockedDataSequence.get(0).toByteArray().length, connectionManagerSocketAddress));
 
             for(int i = 1; i < mockedDataSequence.size(); i++) {
@@ -157,7 +183,7 @@ public class ReadStateTest {
 
 
             // Verify number of requests received
-            Mockito.verify(socket, Mockito.times(mockedDataSequence.size())).receivePacket();
+            Mockito.verify(socket, Mockito.times(mockedDataSequence.size())).receive();
 
             // Verify first sent request is a RRRQ
             inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
@@ -166,7 +192,7 @@ public class ReadStateTest {
 
             // Verify second sent request is an ACK with same block number
             for(DataMessage dataMessage: mockedDataSequence) {
-                inOrder.verify(resourceManager).writeBytesToFile(StateTestConfig.FILENAME, dataMessage.getData());
+                inOrder.verify(mockedFile).writeBytesToFile(dataMessage.getData());
                 inOrder.verify(socket).sendMessage(ackArgument.capture(), Mockito.eq(connectionManagerSocketAddress));
                 Assert.assertEquals(
                         "Expected ACK Message with Block " + dataMessage.getBlockNum() + " Does Not Match",

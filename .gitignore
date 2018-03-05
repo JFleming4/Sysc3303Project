@@ -6,7 +6,7 @@
 /.settings/
 /resources/client/
 /resources/server/
-/resources/config/
+/resources/config/config.json
 /.idea/
 *.iml
 

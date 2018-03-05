@@ -3,6 +3,15 @@ package states;
 public class StateTestConfig {
     public static final String SERVER_HOST = "localhost";
     public static final String FILENAME = "file.text";
+    public static final boolean IS_FILE = true;
+    public static final boolean PARENT_DIRECTORY_EXISTS = true;
+    public static final boolean IS_VALID_RESOURCE = true;
+    public static final boolean CREATE_NEW_FILE_RETURN = true;
+    public static final boolean READ_FILE_EXISTS = false;
+    public static final boolean READ_FILE_CAN_WRITE = true;
+    public static final boolean WRITE_FILE_CAN_READ = true;
+    public static final boolean WRITE_FILE_EXISTS = true;
+    public static final long USABLE_SPACE = 999999999;
     public static final String FILE_STRING = "Lorem ipsum dolor sit amet, consectetur adipiscing elit." +
             "Curabitur nunc velit, vestibulum eu magna et, eleifend ullamcorper risus. Praesent sit " +
             "amet enim diam. Etiam sodales sem dolor. Morbi lobortis, augue at vestibulum mollis, lorem " +

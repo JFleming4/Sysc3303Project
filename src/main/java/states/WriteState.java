@@ -1,23 +1,19 @@
 package states;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.List;
 
-import exceptions.InvalidPacketException;
+import exceptions.SessionException;
 import formats.*;
-import formats.ErrorMessage.ErrorType;
 import formats.Message.MessageType;
 import formats.RequestMessage;
 import logging.Logger;
 import resources.ResourceManager;
+import session.ISessionHandler;
+import session.TFTPSession;
+import session.TransmitSession;
 import socket.TFTPDatagramSocket;
 
-public class WriteState extends State {
+public class WriteState extends State implements ISessionHandler{
 	private static final int SOCKET_TIMEOUT = 5000;
 	private TFTPDatagramSocket socket;
 	private ResourceManager resourceManager;
@@ -44,138 +40,49 @@ public class WriteState extends State {
 
 	@Override
 	public State execute() {
-        try {
 
-            if(!resourceManager.fileExists(filename))
-                throw new FileNotFoundException("File (" + filename + ") Not Found");
-
-            try {
-                // Create the write request & send
-                RequestMessage wrqMessage = new RequestMessage(MessageType.WRQ ,filename);
-                socket.sendMessage(wrqMessage, serverAddress);
-                LOG.logQuiet("---- Begin File Transaction ---");
-                LOG.logQuiet("Write Request has been sent!");
-
-                // Wait for WRQ ack
-                DatagramPacket recv = socket.receivePacket();
-
-                try
-                {
-                    switch (Message.getMessageType(recv.getData())) {
-                        case ACK:
-                            AckMessage ack = AckMessage.parseMessageFromPacket(recv);
-                            LOG.logVerbose("Received WRQ ACK");
-
-                            if (ack.getBlockNum() != 0) throw new IOException("Incorrect Initial Block Number");
-
-                            sendDataBlock(resourceManager.readFileToBytes(filename), recv.getSocketAddress());
-                            LOG.logQuiet("Successfully completed write operation");
-                            LOG.logQuiet("---- End File Transaction ---");
-                            break;
-
-                        case ERROR:
-                            handleErrorMessage(recv);
-                            break;
-
-                        default:
-                            break;
-                    }
-                } catch (InvalidPacketException ipE) {
-
-                }
-            } catch(UnknownHostException uHE) {
-                LOG.logQuiet("Error: Unknown Host Entered");
-            } catch(IOException ioE) {
-                if (ioE.getLocalizedMessage().toLowerCase().contains("access is denied") || ioE.getLocalizedMessage().toLowerCase().contains("permission denied"))
-                {
-                    LOG.logQuiet("You do not have permissions to read this file");
-                    ErrorMessage errMsg = new ErrorMessage(ErrorType.ACCESS_VIOLATION, "You do not have the correct permissions for this file");
-                    socket.sendMessage(errMsg, this.serverAddress);
-                } else {
-                    ioE.printStackTrace();
-                }
-            }
-        } catch (SocketException sE) {
-            sE.printStackTrace();
-        } catch (FileNotFoundException fNFE) {
-            LOG.logQuiet("Error: " + fNFE.getMessage());
-        } catch (IOException ioE) {
-            LOG.logQuiet("IOException occurred. " + ioE.getLocalizedMessage());
-        } finally {
-            socket.close();
+        // Ensure the selected resource file is valid.
+        if(!resourceManager.isValidResource(filename))
+        {
+            LOG.logVerbose("The file '" + filename + "' is an invalid resource file.");
+            return new InputState();
         }
+
+        // Create the request message
+        RequestMessage initialReq = new RequestMessage(MessageType.WRQ, filename);
+        System.out.println((new TransmitSession(this, initialReq, serverAddress).getSessionSuccess()));
+
 
         return new InputState();
     }
 
-    /**
-     * Sends an array of bytes over TFTP, splicing the data in blocks if necessary
-     * @param data The array of data
-     * @param socketAddress The Socket address used in sending packet
-     * @throws IOException
-     */
-    private void sendDataBlock(byte[] data, SocketAddress socketAddress) throws IOException {
-
-        // Create a sequence of data for the byte array
-        List<DataMessage> messages = DataMessage.createDataMessageSequence(data);
-        LOG.logVerbose("Sending " + messages.size() + " Data messages to " + socketAddress);
-
-        try {
-            // Send each data block sequentially
-            for(DataMessage m : messages) {
-
-                LOG.logVerbose("Block: " + m.getBlockNum() + ", Data size: " + m.getDataSize() + ", Final Block: " + m.isFinalBlock());
-                // Send Data block message
-                socket.sendMessage(m, socketAddress);
-
-                // Wait for Ack message before continuing
-                DatagramPacket packet = socket.receivePacket();
-                switch (Message.getMessageType(packet.getData())) {
-                    case ERROR:
-                        handleErrorMessage(packet);
-                        break;
-
-                    case ACK:
-                        AckMessage ack = AckMessage.parseMessageFromPacket(packet);
-                        LOG.logVerbose("Ack Received: " + ack.getBlockNum());
-
-                        if(ack.getBlockNum() != m.getBlockNum()) {
-                            throw new InvalidPacketException("Invalid Block Number");
-                        }
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-        } catch (InvalidPacketException e) {
-            e.printStackTrace();
-            throw new IOException("Failed to parse Ack Message", e);
-        }
+    @Override
+    public ResourceManager getSessionResourceManager() {
+        return this.resourceManager;
     }
 
-    /**
-     * Handle a received error message
-     * @param recv DatagramPacket to be received
-     * @throws InvalidPacketException
-     */
-    private void handleErrorMessage(DatagramPacket recv) throws InvalidPacketException {
-        ErrorMessage errorMessage = ErrorMessage.parseMessageFromPacket(recv);
-        LOG.logQuiet("Received error (" + errorMessage.getErrorType() + ") with message: " + errorMessage.getMessage());
+    @Override
+    public TFTPDatagramSocket getSessionTFTPSocket() {
+        return this.socket;
+    }
 
-        // Determine the Type of the ErrorMessage
-        switch (errorMessage.getErrorType()) {
+    @Override
+    public void sessionErrorOccurred(TFTPSession session, ErrorMessage message) throws IOException, SessionException {
+        switch (message.getErrorType()) {
             case FILE_EXISTS:
+                // File exists is normal behaviour, since we are writing the file
                 break;
-
-            case DISK_FULL:
-                // Justin's code
-                break;
-
+            case FILE_NOT_FOUND:
+                LOG.logQuiet("The file " + session.getSessionRequest().getFileName() + " does not exist (or is not a file). No session will be started with the server.");
+                throw new SessionException();
             default:
+                session.raiseError(message);
                 break;
         }
-
     }
 
+    @Override
+    public void sessionErrorReceived(TFTPSession session, ErrorMessage message) {
+
+    }
 }
