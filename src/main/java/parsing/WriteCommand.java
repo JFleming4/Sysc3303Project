@@ -22,7 +22,7 @@ public class WriteCommand extends SocketCommand {
 
 	@Override
 	public State execute() {
-		if (this.tokens.size() < 2)
+		if (super.getArgumentsSize() < 2)
 			LOG.logQuiet("Error: Not enough arguments");
 		else
 			try {

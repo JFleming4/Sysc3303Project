@@ -7,6 +7,8 @@ import java.util.List;
 import logging.Logger;
 import states.State;
 
+import static resources.Configuration.GLOBAL_CONFIG;
+
 
 public abstract class Command {
 	protected static final Logger LOG = new Logger("FTPClient");
@@ -47,6 +49,10 @@ public abstract class Command {
 	}
 	
 	protected void setLogLevel() {
-		Logger.setLogLevel(Logger.LogLevel.QUIET);
+		if(GLOBAL_CONFIG.DEBUG_MODE)
+			Logger.setLogLevel(Logger.LogLevel.VERBOSE);
+		else
+			Logger.setLogLevel(Logger.LogLevel.QUIET);
+
 	}
 }
