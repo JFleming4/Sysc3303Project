@@ -18,6 +18,7 @@ import org.mockito.Mockito;
 import org.mockito.stubbing.OngoingStubbing;
 
 import formats.*;
+import formats.ErrorMessage.ErrorType;
 import formats.Message.MessageType;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
@@ -63,7 +64,7 @@ public class WriteStateTest {
     }
 
     @Test
-    public void FileNotFoundError() {
+    public void FileNotFoundErrorOnClient() {
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outStream));
 
@@ -119,6 +120,74 @@ public class WriteStateTest {
          catch (IOException e) {
             Assert.fail(e.getMessage());
         }
+        System.setOut(System.out);
+    }
+
+    @Test
+    public void DiskFullOnServerWhenSendingLastDATAMessageError() {
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outStream));
+
+        try {
+            ArgumentCaptor<RequestMessage> requestArgument = ArgumentCaptor.forClass(RequestMessage.class);
+            ArgumentCaptor<DataMessage> dataArgument = ArgumentCaptor.forClass(DataMessage.class);
+
+            //Disk Full Error Message
+            String expectedErrorMessage = "Not enough free space";
+            byte[] mockResponseErrorBytes = new ErrorMessage(ErrorType.DISK_FULL, expectedErrorMessage).toByteArray();
+
+            // Create mock packet sequence with half the message and then the disk full error message
+            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(true);
+            Mockito.when(resourceManager.readFileToBytes(StateTestConfig.FILENAME)).thenReturn(StateTestConfig.FILE_STRING.getBytes());
+
+
+            // build first response as the ack with block 0
+            AckMessage mockResponseAckInitial = new AckMessage(0);
+            OngoingStubbing<DatagramPacket> mockResponseBuilder = Mockito.when(socket.receivePacket())
+                    .thenReturn( new DatagramPacket(mockResponseAckInitial.toByteArray(), mockResponseAckInitial.toByteArray().length, connectionManagerSocketAddress));
+
+            // build rest of the ack responses for everything but last data block
+            List<DataMessage> mockedDataSequence = DataMessage.createDataMessageSequence(StateTestConfig.FILE_STRING.getBytes());
+            for (int i = 0; i < mockedDataSequence.size() - 1; i++) {
+                AckMessage mockResponseAck = new AckMessage(mockedDataSequence.get(i).getBlockNum());
+                mockResponseBuilder.thenReturn(new DatagramPacket(mockResponseAck.toByteArray(), mockResponseAck.toByteArray().length, connectionManagerSocketAddress));
+            }
+            //return the disk full error last
+            mockResponseBuilder.thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
+
+            // Execute function
+            new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
+
+            // verify resourceManager was called
+            Mockito.verify(resourceManager).readFileToBytes((StateTestConfig.FILENAME));
+
+            // Verify number of requests received
+            Mockito.verify(socket, Mockito.times(mockedDataSequence.size() + 1)).receivePacket();
+
+            // Verify first sent request is a WRQ
+            inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
+            Assert.assertEquals("Created Write Request Does Not Match",
+                    new String(new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray()),
+                    new String(requestArgument.getValue().toByteArray())
+            );
+
+            // Verify sent request is an DATA Message with same block number
+            for(int i = 0; i < mockedDataSequence.size() - 1; i++) {
+                inOrder.verify(socket).sendMessage(dataArgument.capture(), Mockito.eq(connectionManagerSocketAddress));
+                Assert.assertEquals(
+                        "Expected DATA Message with Block " + mockedDataSequence.get(i).getBlockNum() + " Does Not Match",
+                        mockedDataSequence.get(i).getBlockNum(),
+                        dataArgument.getValue().getBlockNum()
+                );
+            }
+
+            // Ensure Message is displayed to the user
+            Assert.assertTrue("Disk Full User Message Not Found", outStream.toString().contains(expectedErrorMessage));
+        }
+         catch (IOException e) {
+            Assert.fail(e.getMessage());
+        }
+
         System.setOut(System.out);
     }
 

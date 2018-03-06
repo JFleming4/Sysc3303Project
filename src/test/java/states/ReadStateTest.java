@@ -65,6 +65,30 @@ public class ReadStateTest {
         this.RunReadTestByFileLength(-1);
     }
 
+    @Test
+    public void FileAlreadyExistsOnClientError() {
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outStream));
+
+        try {
+            byte[] expectedRRQBytes = new RequestMessage(MessageType.RRQ, StateTestConfig.FILENAME).toByteArray();
+            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(true);
+
+            // Execute function
+            new ReadState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
+            Mockito.verify(socket, Mockito.times(0)).send(new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, serverAddress));
+            Mockito.verify(socket, Mockito.times(0)).receivePacket();
+            Mockito.verify(resourceManager, Mockito.times(0)).readFileToBytes(StateTestConfig.FILENAME);
+
+            // Ensure Message is displayed to the user
+            Assert.assertTrue("File Not Found User Message Not Found",
+                    outStream.toString().contains("File (" + StateTestConfig.FILENAME + ") already exists on the Client"));
+        } catch (IOException e) {
+            Assert.fail(e.getMessage());
+        }
+
+        System.setOut(System.out);
+    }
 
 	@Test
     public void FileNotFoundOnServerError() {
