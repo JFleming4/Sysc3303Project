@@ -1,7 +1,5 @@
 package states;
 
-import static org.junit.Assert.*;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -18,7 +16,6 @@ import org.mockito.Mockito;
 
 import formats.AckMessage;
 import formats.DataMessage;
-import formats.Message;
 import formats.RequestMessage;
 import formats.Message.MessageType;
 import socket.TFTPDatagramSocket;

@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 
-import exceptions.InvalidPacketException;
-import formats.Message;
-import formats.Message.MessageType;
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 

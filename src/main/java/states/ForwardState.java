@@ -8,7 +8,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 
-import formats.Message;
 import logging.Logger;
 import socket.TFTPDatagramSocket;
 
