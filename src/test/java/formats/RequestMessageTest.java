@@ -116,8 +116,8 @@ public class RequestMessageTest {
     @Test
     public void testParseDataMessage() throws IOException, InvalidPacketException
     {
-        MessageTestSuite.testValidParseData(RequestMessage::parseMessageFromBytes, validParseData);
-        MessageTestSuite.testValidParseData(data -> RequestMessage.parseMessageFromPacket(new DatagramPacket(data, data.length)), validParseData);
+        MessageTestSuite.testValidParseData(RequestMessage::parseMessage, validParseData);
+        MessageTestSuite.testValidParseData(data -> RequestMessage.parseMessage(new DatagramPacket(data, data.length)), validParseData);
     }
 
     /**
@@ -126,8 +126,8 @@ public class RequestMessageTest {
     @Test
     public void testIncorrectParseData()
     {
-        MessageTestSuite.testInvalidParseData(RequestMessage::parseMessageFromBytes, invalidParseData);
-        MessageTestSuite.testInvalidParseData(data -> RequestMessage.parseMessageFromPacket(new DatagramPacket(data, data.length)), invalidParseData);
+        MessageTestSuite.testInvalidParseData(RequestMessage::parseMessage, invalidParseData);
+        MessageTestSuite.testInvalidParseData(data -> RequestMessage.parseMessage(new DatagramPacket(data, data.length)), invalidParseData);
     }
 
 }

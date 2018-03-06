@@ -23,7 +23,7 @@ public class ReadCommand extends SocketCommand {
 
 	@Override
 	public State execute() {
-		if (this.tokens.size() < 3)
+		if (super.getArgumentsSize() < 2)
 			LOG.logQuiet("Error: Not enough arguments");
 		else
 			try {
@@ -31,7 +31,11 @@ public class ReadCommand extends SocketCommand {
 				return new ReadState(getServerAddress(), resourceManager, getFilename(), isVerbose());
 			} catch (IOException e) {
 				e.printStackTrace();
+
+				// Flush stderr so it doesn't get mangled with stdout
+				System.err.flush();
 			}
+
 		return new InputState();
 	}
 

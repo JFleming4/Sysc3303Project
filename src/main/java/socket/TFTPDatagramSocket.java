@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.Arrays;
 
 public class TFTPDatagramSocket extends DatagramSocket {
 	public final static Logger LOG = new Logger("TFTPDatagramSocket");
@@ -33,7 +34,10 @@ public class TFTPDatagramSocket extends DatagramSocket {
 		byte[] data = msg.toByteArray();
 		DatagramPacket packet = new DatagramPacket(data, data.length, socketAddress);
 		LOG.logVerbose("Sending Message to " + socketAddress);
+		LOG.logVerbose("===== Packet Information ====");
 		LOG.logVerbose(packet);
+		LOG.logVerbose("===== End Packet Information ====");
+		LOG.logVerbose(System.lineSeparator());
 		send(packet);
 	}
 
@@ -61,12 +65,22 @@ public class TFTPDatagramSocket extends DatagramSocket {
 	 * Receives a TFTP message over the socket
 	 * @throws IOException
 	 */
-	public DatagramPacket receivePacket() throws IOException
-	{
-		DatagramPacket packet = new DatagramPacket(new byte [Message.MAX_PACKET_SIZE], Message.MAX_PACKET_SIZE);
-		receive(packet);
+	public DatagramPacket receive() throws IOException {
+		DatagramPacket packet = new DatagramPacket(new byte[Message.MAX_PACKET_SIZE], Message.MAX_PACKET_SIZE);
+		super.receive(packet);
+
+		// Trim and set byte array
+		byte[] trimmedData = Arrays.copyOf(packet.getData(), packet.getLength());
+		packet.setData(trimmedData);
+
 		LOG.logVerbose("Received Packet from " + packet.getSocketAddress());
+		LOG.logVerbose("===== Packet Information ====");
 		LOG.logVerbose(packet);
+		LOG.logVerbose("===== End Packet Information ====");
+		LOG.logVerbose(System.lineSeparator());
+
+
 		return packet;
 	}
 }
+

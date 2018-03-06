@@ -1,6 +1,7 @@
 package states;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.DatagramPacket;
@@ -20,6 +21,7 @@ import org.mockito.stubbing.OngoingStubbing;
 import formats.*;
 import formats.ErrorMessage.ErrorType;
 import formats.Message.MessageType;
+import resources.ResourceFile;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
 
@@ -29,18 +31,44 @@ public class WriteStateTest {
     private InetSocketAddress serverAddress;
     private InetSocketAddress connectionManagerSocketAddress;
     private InOrder inOrder;
+    private ResourceFile mockedFile;
+    private File mockedParentFile;
 
 	@Before
 	public void setUp() {
 	    socket = Mockito.mock(TFTPDatagramSocket.class);
 	    resourceManager = Mockito.mock(ResourceManager.class);
+        mockedFile = Mockito.mock(ResourceFile.class);
+        mockedParentFile = Mockito.mock(File.class);
+
         try {
             serverAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 69);
             connectionManagerSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+
         inOrder = Mockito.inOrder(socket);
+
+        try {
+            // Set up mocked file
+            Mockito.when(mockedFile.exists()).thenReturn(StateTestConfig.WRITE_FILE_EXISTS);
+            Mockito.when(mockedFile.createNewFile()).thenReturn(StateTestConfig.CREATE_NEW_FILE_RETURN);
+            Mockito.when(mockedFile.getParentFile()).thenReturn(mockedParentFile);
+            Mockito.when(mockedFile.canRead()).thenReturn(StateTestConfig.WRITE_FILE_CAN_READ);
+            Mockito.when(mockedFile.getName()).thenReturn(StateTestConfig.FILENAME);
+            Mockito.when(mockedFile.isFile()).thenReturn(StateTestConfig.IS_FILE);
+
+            // Set up mocked parent file
+            Mockito.when(mockedParentFile.exists()).thenReturn(StateTestConfig.PARENT_DIRECTORY_EXISTS);
+
+            // Set up resource manager mock
+            Mockito.when(resourceManager.getFile(StateTestConfig.FILENAME)).thenReturn(mockedFile);
+            Mockito.when(resourceManager.isValidResource(StateTestConfig.FILENAME)).thenReturn(StateTestConfig.IS_VALID_RESOURCE);
+        }catch (IOException ioE)
+        {
+            Assert.fail(ioE.getMessage());
+        }
 	}
 
     @Test
@@ -70,16 +98,16 @@ public class WriteStateTest {
 
         try {
             byte[] expectedWRQBytes = new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
-            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(false);
+            Mockito.when(mockedFile.exists()).thenReturn(false);
 
             // Execute function
             new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
             Mockito.verify(socket, Mockito.times(0)).send( new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, serverAddress));
-            Mockito.verify(socket, Mockito.times(0)).receivePacket();
-            Mockito.verify(resourceManager, Mockito.times(0)).readFileToBytes(StateTestConfig.FILENAME);
+            Mockito.verify(socket, Mockito.times(0)).receive();
+            Mockito.verify(mockedFile, Mockito.times(0)).readFileToBytes();
 
             // Ensure Message is displayed to the user
-            Assert.assertTrue("File Not Found User Message Not Found", outStream.toString().contains("File (" + StateTestConfig.FILENAME + ") Not Found"));
+            Assert.assertTrue("File Not Found User Message Not Found", outStream.toString().contains("The file "+ StateTestConfig.FILENAME + " does not exist (or is not a file)"));
         }
          catch (IOException e) {
             Assert.fail(e.getMessage());
@@ -101,10 +129,10 @@ public class WriteStateTest {
             String expectedErrorMessage = "File (" + StateTestConfig.FILENAME + ") already exists on the Server.";
             byte[] mockResponseErrorBytes = new ErrorMessage(ErrorMessage.ErrorType.FILE_EXISTS, expectedErrorMessage).toByteArray();
 
-            Mockito.when(socket.receivePacket()).thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
+            Mockito.when(socket.receive()).thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
 
-            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(true);
-            Mockito.when(resourceManager.readFileToBytes(StateTestConfig.FILENAME)).thenReturn(StateTestConfig.FILENAME.getBytes());
+            Mockito.when(mockedFile.exists()).thenReturn(true);
+            Mockito.when(mockedFile.readFileToBytes()).thenReturn(StateTestConfig.FILENAME.getBytes());
 
             // Execute function
             new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, true, socket).execute();
@@ -112,7 +140,7 @@ public class WriteStateTest {
             inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
             Assert.assertEquals("Created Write Request Does Not Match", new String(expectedWRQBytes), new String(requestArgument.getValue().toByteArray()));
 
-            Mockito.verify(socket, Mockito.times(1)).receivePacket();
+            Mockito.verify(socket, Mockito.times(1)).receive();
 
             // Ensure Message is displayed to the user
             Assert.assertTrue("File Not Found User Message Not Found", outStream.toString().contains(expectedErrorMessage));
@@ -201,8 +229,8 @@ public class WriteStateTest {
 
             // Create mock File Data messages
             String mockFile = length != -1 ? StateTestConfig.FILE_STRING.substring(0, length - 1) : StateTestConfig.FILE_STRING;
-            Mockito.when(resourceManager.readFileToBytes(StateTestConfig.FILENAME)).thenReturn(mockFile.getBytes());
-            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(true);
+            Mockito.when(mockedFile.readFileToBytes()).thenReturn(mockFile.getBytes());
+            Mockito.when(mockedFile.exists()).thenReturn(true);
 
 
             // Create response Ack Messages from the data message sequence on receivePacket
@@ -211,9 +239,11 @@ public class WriteStateTest {
             // build first response as the ack with block 0
             AckMessage mockResponseAckInitial = new AckMessage(0);
             AckMessage mockResponseAck = new AckMessage(mockedDataSequence.get(0).getBlockNum());
-            OngoingStubbing<DatagramPacket> mockResponseBuilder = Mockito.when(socket.receivePacket())
+            OngoingStubbing<DatagramPacket> mockResponseBuilder = Mockito.when(socket.receive())
                     .thenReturn( new DatagramPacket(mockResponseAckInitial.toByteArray(), mockResponseAckInitial.toByteArray().length, connectionManagerSocketAddress));
 
+
+            //Mockito.when(DataMessage.createDataMessageSequence())
             // build rest of the responses
             for (DataMessage dataMessage : mockedDataSequence) {
                 mockResponseAck = new AckMessage(dataMessage.getBlockNum());
@@ -224,7 +254,7 @@ public class WriteStateTest {
             new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
 
             // Verify number of requests received
-            Mockito.verify(socket, Mockito.times(mockedDataSequence.size() + 1)).receivePacket();
+            Mockito.verify(socket, Mockito.times(mockedDataSequence.size() + 1)).receive();
 
             // Verify first sent request is a WRQ
             inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
@@ -241,7 +271,7 @@ public class WriteStateTest {
             }
 
             // verify resourceManager was called
-            Mockito.verify(resourceManager).readFileToBytes((StateTestConfig.FILENAME));
+            Mockito.verify(mockedFile).readFileToBytes();
 
         } catch (IOException e) {
             Assert.fail(e.getMessage());

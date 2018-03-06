@@ -112,6 +112,11 @@ public class Logger {
         // Make sure multi-lined text is appended with the tag
         String[] lines = text.split("\n");
 
+        // Occurs if the input text is strictly a new line character (or empty String)
+        if(lines.length == 0)
+            System.out.println();
+
+
         for (String s : lines)
             System.out.println("[" + componentName + "][" + level.name() +  "]: " + s);
     }
@@ -153,6 +158,21 @@ public class Logger {
     }
 
     /**
+     * Logs a message to verbose output
+     * @param message The message to log
+     */
+    public synchronized void logVerbose(Message message)
+    {
+        logVerbose(message.toString());
+    }
+
+    /**
+     * Logs a message to quiet output
+     * @param message The message to log
+     */
+    public synchronized void logQuiet(Message message){ logQuiet(message.toString()); }
+
+    /**
      * @param packet The packet to print
      * @return A formatted string with packet data
      */
@@ -170,69 +190,14 @@ public class Logger {
         builder.append(packet.getPort());
         builder.append(System.lineSeparator());
 
-        builder.append("Packet Type: ");
-
-        // Get packet type
-        if(packet.getData().length < 2) {
-            builder.append("INVALID");
-            return builder.toString();
-        }
-
-        Message.MessageType type = Message.MessageType.getMessageType((int)packet.getData()[1]);
-
-        if(type == null) {
-            builder.append("INVALID");
-            return builder.toString();
-        }
-        builder.append(type.name());
+        builder.append("Packet Data: ");
         builder.append(System.lineSeparator());
 
-        builder.append("Message Data:");
-        builder.append(System.lineSeparator());
+        try
+        {
+            Message message = Message.parseGenericMessage(packet);
+            builder.append(message);
 
-        try{
-
-            // Print applicable data
-            if(Message.MessageType.isRequestType(type))
-            {
-                RequestMessage msg = RequestMessage.parseMessageFromPacket(packet);
-                builder.append("Packet File Name: ");
-                builder.append(msg.getFileName());
-                builder.append(System.lineSeparator());
-
-                builder.append("Packet File Name: ");
-                builder.append(msg.getMode());
-                builder.append(System.lineSeparator());
-            }
-            else if(type.equals(Message.MessageType.ACK))
-            {
-                AckMessage msg = AckMessage.parseMessageFromPacket(packet);
-                builder.append("Block Number: ");
-                builder.append(msg.getBlockNum());
-                builder.append(System.lineSeparator());
-            }
-            else if(type.equals(Message.MessageType.DATA))
-            {
-                DataMessage msg = DataMessage.parseMessageFromPacket(packet);
-                builder.append("Block Number: ");
-                builder.append(msg.getBlockNum());
-                builder.append(System.lineSeparator());
-
-                builder.append("Number of bytes of data: ");
-                builder.append(msg.getDataSize());
-                builder.append(System.lineSeparator());
-            }
-            else if(type.equals(Message.MessageType.ERROR))
-            {
-                ErrorMessage msg = ErrorMessage.parseMessageFromPacket(packet);
-                builder.append("Error Code: ");
-                builder.append(msg.getErrorType().getCode());
-                builder.append(System.lineSeparator());
-
-                builder.append("Error Message: ");
-                builder.append(msg.getMessage());
-                builder.append(System.lineSeparator());
-            }
         }catch (InvalidPacketException iPE)
         {
             builder.append("Could Not Read Packet Data. Invalid Packet.");

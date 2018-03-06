@@ -68,6 +68,16 @@ public abstract class SocketCommand extends Command {
 		return tokens.get(FILENAME_IDX);
 	}
 
+	public boolean isOption(int index) {
+		for(Options option: Options.values())
+		{
+			if(tokens.get(index).equalsIgnoreCase(option.option))
+				return true;
+		}
+
+		return false;
+	}
+
 	public void setFileName(String fileName) {
 		tokens.set(FILENAME_IDX, fileName);
 	}
@@ -90,12 +100,61 @@ public abstract class SocketCommand extends Command {
 		}
 		return false;
 	}
+
+	/**
+	 * This method gets the true argument size (ignores options)
+	 * @return The number of arguments that exist within the token
+	 */
+	public int getArgumentsSize()
+	{
+		int size = 0;
+		// Otherwise, iterate the tokens
+		for(int i = 0; i < tokens.size(); i++)
+		{
+			if(!isOption(i))
+				size++;
+		}
+
+		return size;
+	}
+
+	/**
+	 * This method gets the true argument index (ignoring any options)
+	 * This allows us to place options before and after the argument. Example:
+	 * read -t -v read-test.txt
+	 * @param index The relative argument index of the argument
+	 * @return The argument value
+	 */
+	public String getArgument(int index)
+	{
+		// Otherwise, iterate the tokens
+		for(int i = 0; i < tokens.size(); i++)
+		{
+			if(!isOption(i))
+			{
+				if(index == 0)
+					return tokens.get(i);
+				else
+					index--;
+			}
+		}
+
+		return "";
+	}
 	
 	private InetSocketAddress errorSimulatorAddress() {
 		return new InetSocketAddress(InetAddress.getLoopbackAddress(), GLOBAL_CONFIG.SIMULATOR_PORT);
 	}
 	
 	private InetSocketAddress serverAddress() throws UnknownHostException {
-		return new InetSocketAddress(InetAddress.getByName(tokens.get(SERVER_ADDR_IDX)), GLOBAL_CONFIG.SERVER_PORT);
+		String serverAdrArg = getArgument(SERVER_ADDR_IDX);
+
+		// Use loopback if no server address is provided
+		InetAddress serverAdr = serverAdrArg.isEmpty() ? InetAddress.getLocalHost() : InetAddress.getByName(serverAdrArg);
+
+		LOG.logVerbose("Using the following server address: " + serverAdr);
+
+
+		return new InetSocketAddress(serverAdr, GLOBAL_CONFIG.SERVER_PORT);
 	}
 }

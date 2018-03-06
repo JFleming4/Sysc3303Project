@@ -117,7 +117,7 @@ public class ErrorMessage extends Message {
      */
     public static boolean isErrorMessage(DatagramPacket packet) {
     	try {
-    		parseMessageFromPacket(packet);
+    		parseMessage(packet);
     		return true;
     	} catch(InvalidPacketException ipe) {
     		return false;
@@ -130,8 +130,8 @@ public class ErrorMessage extends Message {
      * @return The ErrorMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static ErrorMessage parseMessageFromPacket(DatagramPacket packet) throws InvalidPacketException {
-        return parseMessageFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
+    public static ErrorMessage parseMessage(DatagramPacket packet) throws InvalidPacketException {
+        return parseMessage(Arrays.copyOf(packet.getData(), packet.getLength()));
     }
 
     /**
@@ -140,7 +140,7 @@ public class ErrorMessage extends Message {
      * @return The ErrorMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static ErrorMessage parseMessageFromBytes(byte[] data) throws InvalidPacketException {
+    public static ErrorMessage parseMessage(byte[] data) throws InvalidPacketException {
         // Error message has a minimum size of 5
         if (data.length < 5)
             throw new InvalidPacketException("Packet length too short");
@@ -161,7 +161,7 @@ public class ErrorMessage extends Message {
 
         // Request type must be valid to continue
         if (!MessageType.ERROR.equals(type))
-            throw new InvalidPacketException("Invalid message type. Must be ERROR (" + MessageType.ERROR.getType() + "). Actual: " + requestType);
+            throw new InvalidPacketException("Invalid message type. Must be ERROR (" + MessageType.ERROR.getType() + "). Actual: " + type);
 
         // Read 2-byte error code
         short errorCode = (short) Message.byteArrayToUnsignedShort(data, ptr);
@@ -183,5 +183,23 @@ public class ErrorMessage extends Message {
             throw new InvalidPacketException("End of packet expected. Packet is too large.");
 
         return new ErrorMessage(errType, errorMessage);
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Error Code: ");
+        builder.append(getErrorType());
+        builder.append(" (");
+        builder.append(getErrorType().getCode());
+        builder.append(")");
+        builder.append(System.lineSeparator());
+
+        builder.append("Error Message: ");
+        builder.append(getMessage());
+        builder.append(System.lineSeparator());
+
+        return super.toString() + builder.toString();
     }
 }

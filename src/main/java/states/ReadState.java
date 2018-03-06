@@ -1,20 +1,21 @@
 package states;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.SocketAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
-import exceptions.InvalidPacketException;
+import exceptions.SessionException;
 import formats.*;
-import formats.ErrorMessage.ErrorType;
 import formats.Message.MessageType;
 import logging.Logger;
+import resources.ResourceFile;
 import resources.ResourceManager;
+import session.ISessionHandler;
+import session.ReceiveSession;
+import session.TFTPSession;
 import socket.TFTPDatagramSocket;
 
-public class ReadState extends State {
+public class ReadState extends State implements ISessionHandler {
     private static final int SOCKET_TIMEOUT = 5000;
 
     private TFTPDatagramSocket socket;
@@ -23,10 +24,8 @@ public class ReadState extends State {
     private String filename;
 
     private static final Logger LOG = new Logger("FTPClient - Read");
-    private int expBlockNum;
-    private boolean isConsentual;
 
-    public ReadState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose) throws SocketException, IOException {
+    public ReadState(SocketAddress serverAddress, ResourceManager resourceManager, String filename, boolean isVerbose) throws IOException {
         this(serverAddress, resourceManager, filename, isVerbose, new TFTPDatagramSocket());
     }
 
@@ -38,6 +37,7 @@ public class ReadState extends State {
         this.socket = socket;
         this.socket.setSoTimeout(SOCKET_TIMEOUT);
         this.resourceManager = resourceManager;
+
         if (isVerbose)
             Logger.setLogLevel(Logger.LogLevel.VERBOSE);
         else
@@ -47,142 +47,83 @@ public class ReadState extends State {
     @Override
     public State execute() {
 
-        expBlockNum = -1;
-        isConsentual = true;
-        try {
-            // Create the resource manager, handle IOException if failed to get resource directory
+        // Create the request message
+        RequestMessage initialReq = new RequestMessage(MessageType.RRQ, filename);
 
-            socket.setSoTimeout(SOCKET_TIMEOUT);
+        // Create and run session
+        ReceiveSession rSession = new ReceiveSession(this, initialReq, serverAddress);
+        LOG.logQuiet("Session Success: " + rSession.getSessionSuccess());
 
-            // Check if the file already exists. If so, notify Client about overwrite
-            if (resourceManager.fileExists(filename))
-            {
-                LOG.logQuiet("File (" + filename + ") already exists on the Client");
-                LOG.logQuiet("Please enter another command");
-                return new InputState();
-            }
-
-            // Set up + Send RRQ Message
-            RequestMessage rrqMessage = new RequestMessage(MessageType.RRQ ,filename);
-            socket.sendMessage(rrqMessage, serverAddress);
-            LOG.logQuiet("---- Begin File Transaction ---");
-            LOG.logQuiet("Read request sent!");
-            LOG.logQuiet("Waiting to receive data");
-
-            while (isConsentual) {
-
-                try {
-                    // Receive read data from server
-                    DatagramPacket recv = socket.receivePacket();
-
-
-                    // Handle message type (make this better)
-                    switch (Message.getMessageType(recv.getData())) {
-                        case DATA:
-                            isConsentual = handleDataMessage(recv);
-                            break;
-
-                        case ERROR:
-                            handleErrorMessage(recv);
-                            isConsentual = false;
-                            break;
-
-                        default:
-                            isConsentual = false;
-                            break;
-                    }
-
-                } catch (IOException | InvalidPacketException iopE) {
-                    iopE.printStackTrace();
-                }
-            }
-        } catch(UnknownHostException uHE) {
-            LOG.logQuiet("Error: Unknown Host Entered");
-        } catch(IOException ioE) {
-            LOG.logVerbose("An IOException has occurred: " + ioE.getLocalizedMessage());
-            ioE.printStackTrace();
-        } finally {
-            socket.close();
-        }
-
+        socket.close();
         return new InputState();
     }
 
+    @Override
+    public ResourceManager getSessionResourceManager() {
+        return this.resourceManager;
+    }
 
-    /**
-     *
-     * @param recv blah
-     */
-    private boolean handleDataMessage(DatagramPacket recv) throws InvalidPacketException, IOException
-    {
-        boolean shouldContinue = true;
-
-        DataMessage dataMessage = DataMessage.parseMessageFromPacket(recv);
-        LOG.logVerbose("Received data block: " + dataMessage.getBlockNum());
-
-        // Initialize block number to one sent from server
-        if(expBlockNum == -1)
-            expBlockNum = dataMessage.getBlockNum();
-
-        // Confirm expected block number
-        if(dataMessage.getBlockNum() != expBlockNum)
-            throw new Error("Unexpected Block Number");
-
-        // Attempt to write to file
-        try {
-            resourceManager.writeBytesToFile(filename, dataMessage.getData());
-        } catch (IOException ioE) {
-            if (ioE.getMessage().contains("Not enough usable space"))
-            {
-                LOG.logQuiet("Not enough usable disk space");
-                ErrorMessage msg = new ErrorMessage(ErrorType.DISK_FULL, "Not enough free space on disk");
-                socket.sendMessage(msg, this.serverAddress);
-                shouldContinue = false;
-            } else {
-                ioE.printStackTrace();
-            }
-        }
-
-        // Send ACK and increment block num
-        AckMessage ackMsg = new AckMessage(expBlockNum++);
-        socket.sendMessage(ackMsg, recv.getSocketAddress());
-        LOG.logVerbose("Sent Ack for block: " + ackMsg.getBlockNum());
-
-        // Check if this was the last block
-        if(dataMessage.isFinalBlock()) {
-            LOG.logVerbose("End of read file reached");
-            LOG.logQuiet("Successfully received file");
-            LOG.logQuiet("---- End File Transaction ---");
-            shouldContinue = false;
-        }
-
-        return shouldContinue;
+    @Override
+    public TFTPDatagramSocket getSessionTFTPSocket() {
+        return this.socket;
     }
 
     /**
+     * Handles a Session Error.
+     * We will create the resource file if the file was not found.
+     * We will stop the session if the file already exists.
+     * We will send the ERROR message AND stop the session if any other error occurs
      *
-     * @param recv
-     * @return
-     * @throws InvalidPacketException
+     * @param session The TFTPSession where the error occurred.
+     * @param message The ERROR message representing the error that occurred.
+     * @throws IOException
+     * @throws SessionException
      */
-    private void handleErrorMessage(DatagramPacket recv) throws InvalidPacketException
-    {
-        ErrorMessage errorMessage = ErrorMessage.parseMessageFromPacket(recv);
-        LOG.logVerbose("Received error (" + errorMessage.getErrorType()
-                + ") with message: " + errorMessage.getMessage());
+    @Override
+    public void sessionErrorOccurred(TFTPSession session, ErrorMessage message) throws IOException, SessionException {
 
-        // Determine the Type of the ErrorMessage
-        switch (errorMessage.getErrorType()) {
+        switch (message.getErrorType())
+        {
             case FILE_NOT_FOUND:
-                System.out.println("Sorry, but " + filename + " doesn't exist on the Server");
+                // This should not raise an error. It is correct behaviour.
+                // Create the file.
+                ResourceFile file = session.getResourceFile();
+                LOG.logVerbose("Creating File: " + file.getAbsolutePath());
+                file.createNewFile();
                 break;
-
-            case ACCESS_VIOLATION:
-                // Justin's code
-                break;
-
+            case FILE_EXISTS:
+                // If the file already exists, stop the session but do not send an error
+                LOG.logQuiet("The file already exists and will not be overwritten. No session will be started with the server.");
+                throw new SessionException();
             default:
+                LOG.logVerbose("Error Occurred: " + message.getMessage());
+                // All other errors will be raised.
+                session.raiseError(message);
                 break;
         }
+    }
+
+    /**
+     * We will just print out the error that was received. No additional action is needed.
+     * This is to let us know that the session will finish due to an error.
+     *
+     * @param session The TFTPSession where the error was received.
+     * @param message The ERROR message representing the error that was received by the destination.
+     */
+    @Override
+    public void sessionErrorReceived(TFTPSession session, ErrorMessage message) {
+        LOG.logQuiet("The following ERROR was received from the server: " + message.getMessage());
+        LOG.logVerbose(message);
+
+        // Remove the file, as it is incomplete
+        ResourceFile file = session.getResourceFile();
+
+        LOG.logQuiet("Failed to receive correct file.");
+
+        // Remove file
+        if(file.delete())
+            LOG.logQuiet("Deleted partial file: " + file.getName());
+        else
+            LOG.logQuiet("Failed to delete partial file: " + file.getName());
     }
 }

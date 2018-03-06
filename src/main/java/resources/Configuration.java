@@ -38,10 +38,11 @@ public class Configuration {
     {
         try {
             ResourceManager manager = new ResourceManager(CONFIG_DIR);
+            ResourceFile configFile = manager.getFile(configName);
             Gson gson = new GsonBuilder().create();
 
             // Read and de-serialize JSON file into configuration object
-            String contents = manager.readFileToString(configName);
+            String contents = configFile.readFileToString();
             return gson.fromJson(contents, Configuration.class);
         }
         catch (IOException | JsonSyntaxException e)

@@ -84,8 +84,8 @@ public class AckMessage extends Message {
      * @return The AckMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static AckMessage parseMessageFromPacket(DatagramPacket packet) throws InvalidPacketException {
-        return parseMessageFromBytes(Arrays.copyOf(packet.getData(), packet.getLength()));
+    public static AckMessage parseMessage(DatagramPacket packet) throws InvalidPacketException {
+        return parseMessage(Arrays.copyOf(packet.getData(), packet.getLength()));
     }
 
     /**
@@ -94,7 +94,7 @@ public class AckMessage extends Message {
      * @return The AckMessage object containing all relevant info
      * @throws InvalidPacketException If there was an error parsing the data
      */
-    public static AckMessage parseMessageFromBytes(byte[] data) throws InvalidPacketException {
+    public static AckMessage parseMessage(byte[] data) throws InvalidPacketException {
         // ACK has packet size of strictly 4
         if (data.length != 4)
             throw new InvalidPacketException("Invalid packet length");
@@ -115,7 +115,7 @@ public class AckMessage extends Message {
 
         // Request type must be valid to continue
         if (!MessageType.ACK.equals(type))
-            throw new InvalidPacketException("Invalid message type. Must be ACK (" + MessageType.ACK.getType() + "). Actual: " + requestType);
+            throw new InvalidPacketException("Invalid message type. Must be ACK (" + MessageType.ACK.getType() + "). Actual: " + type);
 
         // Read 2-byte block number
         int blockNum = Message.byteArrayToUnsignedShort(data, ptr);
@@ -132,5 +132,16 @@ public class AckMessage extends Message {
         return new AckMessage(blockNum);
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("Block Number: ");
+        builder.append(getBlockNum());
+        builder.append(System.lineSeparator());
+
+        return super.toString() + builder.toString();
+    }
 
 }

@@ -1,26 +1,27 @@
 package resources;
 
+import exceptions.ResourceException;
 import logging.Logger;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ResourceManager {
 	private static final Logger LOG = new Logger("ResourceManager");
 	private static final String RESOURCE_DIR = "resources";
 	private Path directory;
-
+	private Map<Path, ResourceFile> resourceFileMap;
 
 	/**
 	 * Initialize Resource Directory
-	 * @param directoryName
+	 * @param directoryName The name of the resource directory
 	 */
 	public ResourceManager(String directoryName) throws IOException{
+		resourceFileMap = new HashMap<>();
 		directory = Paths.get(System.getProperty("user.dir"), RESOURCE_DIR, directoryName);
 		LOG.logVerbose("Resource Manager created with directory " + getFullPath());
 
@@ -28,34 +29,6 @@ public class ResourceManager {
 			LOG.logQuiet("The directory '" + getFullPath() + "' does not exist and failed to be created.");
 			throw new IOException("Failed to create the directory " + getFullPath());
 		}
-	}
-
-	/**
-	 *
-	 * @param filename The name of the file to read from
-	 * @return bytes read from file
-	 * @throws IOException
-	 */
-	public synchronized byte[] readFileToBytes(String filename) throws IOException {
-		File file = Paths.get(directory.toString(), filename).toFile();
-		LOG.logVerbose("Reading File to byte array. File:  " + file.getCanonicalPath());
-	    FileInputStream fileInputStream = new FileInputStream(file);
-	    long fileLength = file.length();
-	    byte [] fileBytes = new byte [(int) fileLength];
-	    fileInputStream.read(fileBytes, 0, (int) fileLength);
-	    fileInputStream.close();
-		LOG.logVerbose("Successfully read file. (" + file.getCanonicalPath() + ")");
-	    return fileBytes;
-	}
-
-	/**
-	 *
-	 * @param filename The name of the file to read from
-	 * @return bytes read from file
-	 * @throws IOException
-	 */
-	public synchronized String readFileToString(String filename) throws IOException {
-		return new String(readFileToBytes(filename));
 	}
 
     /**
@@ -66,41 +39,40 @@ public class ResourceManager {
 		return directory.toAbsolutePath().toString();
 	}
 
-	/**
-	 * Check if a file exists in the resource directory
-	 * @param filename name of file to check
-	 * @return boolean
-	 */
-	public synchronized boolean fileExists(String filename) {
-	    return Paths.get(directory.toString(), filename).toFile().exists();
+	public synchronized boolean isValidResource(String fileName)
+	{
+		Path resourcePath = Paths.get(directory.toString(), fileName).normalize();
+
+		// Check to make sure the resource path is contained within
+		// the resource directory (ex: user didn't type '../' as file name)
+		return resourcePath.startsWith(directory);
 	}
 
 	/**
-	 * Writes bytes to the file (The current implementation will not overwrite files)
-	 * @param filename The name of the file
-	 * @param data The bytes to write
-	 * @throws IOException
+	 * Gets the ResourceFile given the fileName.
+	 * ResourceFile objects are cached, and mapped to a full path so that ResourceFile objects only
+	 * need to be resolved once
+	 *
+	 * @param fileName The file name of the resource
+	 * @return The ResourceFile object representing the resource file
+	 * @throws IOException If the given filename resolves to a directory outside of the resource directory
+	 * (usually caused by a filename starting with '../')
 	 */
-	public synchronized void writeBytesToFile(String filename, byte[] data) throws IOException {
-		File file = Paths.get(directory.toString(), filename).toFile();
-		LOG.logVerbose("Writing byte array to File. File:  " + file.getCanonicalPath());
+    public synchronized ResourceFile getFile(String fileName) throws ResourceException {
+		Path resourcePath = Paths.get(directory.toString(), fileName).normalize();
 
-		if(!file.exists() && !file.createNewFile()) {
-			LOG.logVerbose("File does not exist and failed to be created. (" + file.getCanonicalPath() + ")");
-			throw new IOException("Failed to create file (" + file.getCanonicalPath() + ")");
-		}
-		if(file.getUsableSpace() < data.length) {
-			throw new IOException("Not enough usable space");
+		ResourceFile file = resourceFileMap.get(resourcePath);
+
+		// Check to make sure the resource path is contained within
+		// the resource directory (ex: user didn't type '../' as file name)
+		if(!isValidResource(fileName))
+			throw new ResourceException("The given filename '" + fileName + "' resolves to outside the resource directory");
+
+		if(file == null) {
+			file = new ResourceFile(resourcePath);
+			resourceFileMap.put(resourcePath, file);
 		}
 
-		// Append block to file
-		FileOutputStream  fileOutputStream = new FileOutputStream(file, true);
-		try {
-			fileOutputStream.write(data);
-		} finally {
-			fileOutputStream.close();
-		}
-		LOG.logVerbose("Successfully wrote data block to file (" + file.getCanonicalPath() + ")");
-	}
-
+		return file;
+    }
 }

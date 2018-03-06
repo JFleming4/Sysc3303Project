@@ -82,7 +82,7 @@ public class AckMessageTest {
     @Test
     public void testToByteArray() throws InvalidPacketException, IOException
     {
-        AckMessage parse = AckMessage.parseMessageFromBytes(validAck.toByteArray());
+        AckMessage parse = AckMessage.parseMessage(validAck.toByteArray());
         assertEquals(validAck, parse);
     }
 
@@ -101,8 +101,8 @@ public class AckMessageTest {
     @Test
     public void testParseDataMessage() throws IOException, InvalidPacketException
     {
-        MessageTestSuite.testValidParseData(AckMessage::parseMessageFromBytes, validParseData);
-        MessageTestSuite.testValidParseData(data -> AckMessage.parseMessageFromPacket(new DatagramPacket(data, data.length)), validParseData);
+        MessageTestSuite.testValidParseData(AckMessage::parseMessage, validParseData);
+        MessageTestSuite.testValidParseData(data -> AckMessage.parseMessage(new DatagramPacket(data, data.length)), validParseData);
     }
 
     /**
@@ -111,7 +111,7 @@ public class AckMessageTest {
     @Test
     public void testIncorrectParseData()
     {
-        MessageTestSuite.testInvalidParseData(AckMessage::parseMessageFromBytes, invalidParseData);
-        MessageTestSuite.testInvalidParseData(data -> AckMessage.parseMessageFromPacket(new DatagramPacket(data, data.length)), invalidParseData);
+        MessageTestSuite.testInvalidParseData(AckMessage::parseMessage, invalidParseData);
+        MessageTestSuite.testInvalidParseData(data -> AckMessage.parseMessage(new DatagramPacket(data, data.length)), invalidParseData);
     }
 }

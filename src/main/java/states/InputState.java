@@ -19,6 +19,7 @@ public class InputState extends State {
 			return command.execute();
 		} catch (IOException ioE) {
 			ioE.printStackTrace();
+			System.err.flush();
 		}
 
 		return new ExitState();
