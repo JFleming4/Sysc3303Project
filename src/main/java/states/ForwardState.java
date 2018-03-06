@@ -98,6 +98,14 @@ public class ForwardState extends State {
 
 	}
 	
+	public void setServerWorkerPort(int port) {
+		this.currentServerWorkerPort = port;
+	}
+	
+	public void setClientAddress(InetSocketAddress clientAddress) {
+		this.clientAddress = clientAddress;
+	}
+	
 	/**
 	 * Checks to see if a request is coming from the current client.
 	 * @param addr The address to check

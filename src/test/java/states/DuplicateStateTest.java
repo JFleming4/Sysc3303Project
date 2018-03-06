@@ -107,9 +107,10 @@ public class DuplicateStateTest {
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
-			
+			state.setServerWorkerPort(3000);
+			state.setClientAddress(connectionManagerSocketAddress);
 			state.execute();
-			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.any(Integer.class));
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.eq(3000));
 					
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
@@ -118,9 +119,25 @@ public class DuplicateStateTest {
 	
 	@Test
 	public void testDuplicateACK() {
-		checker = new ErrorChecker(MessageType.ACK);
-		state.setErrorChecker(checker);
-		fail();
+		try {
+			checker = new ErrorChecker(MessageType.ACK, 1);
+			state.setErrorChecker(checker);
+			byte[] expectedDataBytes = new DataMessage(2, new byte[] { 0 }).toByteArray();
+			byte[] expectedACKBytes = new AckMessage(1).toByteArray();
+			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, connectionManagerSocketAddress);
+			Mockito.when(socket.receivePacket())
+				.thenReturn(expectedPacket)
+				.thenReturn(serverResponse)
+				.thenThrow(new RuntimeException("TEST EXCEPTION"));
+			state.setServerWorkerPort(3000);
+			state.setClientAddress(connectionManagerSocketAddress);
+			state.execute();
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.eq(3000));
+					
+		} catch (IOException e) {
+            Assert.fail(e.getMessage());
+        }
 	}
 
 }
