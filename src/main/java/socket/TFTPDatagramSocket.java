@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 
 public class TFTPDatagramSocket extends DatagramSocket {
@@ -31,14 +32,24 @@ public class TFTPDatagramSocket extends DatagramSocket {
 	 */
 	public void sendMessage(Message msg, SocketAddress socketAddress) throws IOException
 	{
-		byte[] data = msg.toByteArray();
-		DatagramPacket packet = new DatagramPacket(data, data.length, socketAddress);
-		LOG.logVerbose("Sending Message to " + socketAddress);
-		LOG.logVerbose("===== Packet Information ====");
-		LOG.logVerbose(packet);
-		LOG.logVerbose("===== End Packet Information ====");
-		LOG.logVerbose(System.lineSeparator());
-		send(packet);
+		boolean transmit = true;
+		while(transmit)
+		{
+			try {
+				byte[] data = msg.toByteArray();
+				DatagramPacket packet = new DatagramPacket(data, data.length, socketAddress);
+				LOG.logVerbose("Sending Message to " + socketAddress);
+				LOG.logVerbose("===== Packet Information ====");
+				LOG.logVerbose(packet);
+				LOG.logVerbose("===== End Packet Information ====");
+				LOG.logVerbose(System.lineSeparator());
+				send(packet);
+				transmit = false;
+			} catch (SocketTimeoutException sTD) {
+				LOG.logVerbose("Retransmitting " + msg.getMessageType());
+				LOG.logVerbose(msg);
+			}
+		}
 	}
 
 	/**

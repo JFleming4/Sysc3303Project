@@ -24,6 +24,7 @@ public class TransmitSession extends TFTPSession {
     private static final Logger LOG = new Logger("TransmitSession");
     private static final MessageType INCOMING_MESSAGE_TYPE = ACK;
     private List<DataMessage> messageList;
+    private DataMessage currentData;
     private int expectedAckBlockNumber;
 
     /**
@@ -56,14 +57,18 @@ public class TransmitSession extends TFTPSession {
         // It is safe to assume that the message passed in will be of type AckMessage
         AckMessage ackMessage = (AckMessage) message;
 
-        // Ack Verification here
-        if(ackMessage.getBlockNum() != expectedAckBlockNumber)
+        if (ackMessage.getBlockNum() < expectedAckBlockNumber - 1) {
+            LOG.logVerbose("Received ACK with block: " + ackMessage.getBlockNum() + ". Ignoring ACK block");
+            return;
+        }
+        else if (ackMessage.getBlockNum() == expectedAckBlockNumber - 1)
         {
-            // TODO: Change error type to follow TFTP protocol for delayed / duplicated packets, or invalid block number
-            ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.NOT_DEFINED, "Invalid Block number");
-
-            // Sending an error message will stop the session
-            raiseError(errorMessage);
+            LOG.logVerbose("Received ACK for Block: " + ackMessage.getBlockNum() + ". Retransmitting current DATA.");
+            sendCurrentData();
+        }
+        else if (ackMessage.getBlockNum() == expectedAckBlockNumber) {
+            LOG.logVerbose("Received Retransmitted DATA with block: " + ackMessage.getBlockNum());
+            sendNextData();
         }
 
         // Check to see if message list is empty
@@ -71,12 +76,8 @@ public class TransmitSession extends TFTPSession {
         {
             LOG.logQuiet("Successfully completed transmit session");
             LOG.logQuiet("---- End File Transaction ---");
-
             super.setSessionComplete();
-            return;
         }
-
-        sendNextData();
     }
 
     /**
@@ -93,11 +94,20 @@ public class TransmitSession extends TFTPSession {
         }
 
         // Remove next block of data & send it
-        DataMessage nextData = messageList.remove(0);
+        currentData = messageList.remove(0);
 
-        // Set expected ACK block number
-        expectedAckBlockNumber = nextData.getBlockNum();
-        sendMessage(nextData);
+        sendCurrentData();
+    }
+
+    /**
+     * Sends current data message
+     * @throws IOException
+     * @throws SessionException
+     */
+    private void sendCurrentData() throws IOException, SessionException
+    {
+        expectedAckBlockNumber = currentData.getBlockNum();
+        sendMessage(currentData);
     }
 
     /**

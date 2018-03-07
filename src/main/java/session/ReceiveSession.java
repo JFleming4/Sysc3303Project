@@ -29,6 +29,7 @@ public class ReceiveSession extends TFTPSession {
     private static final MessageType INCOMING_MESSAGE_TYPE = DATA;
 
     private int expectedBlockNumber;
+    private int lastBlockAcked;
 
     /**
      * Creates a new Session given a Session Handler
@@ -58,6 +59,17 @@ public class ReceiveSession extends TFTPSession {
 
         // It is safe to assume that the message passed in will be of type DataMessage
         DataMessage dataMessage = (DataMessage) message;
+
+        if (dataMessage.getBlockNum() < lastBlockAcked) {
+            LOG.logVerbose("Received DATA with block: " + dataMessage.getBlockNum() + ". Ignoring DATA block");
+            return;
+        }
+
+        if (dataMessage.getBlockNum() == lastBlockAcked) {
+            LOG.logVerbose("Received Retransmitted DATA with block: " + dataMessage.getBlockNum());
+            sendAckForData(dataMessage);
+            return;
+        }
 
         ResourceFile resourceFile = getResourceFile();
 
@@ -99,6 +111,9 @@ public class ReceiveSession extends TFTPSession {
         // Send ACK for data
         AckMessage ackMsg = new AckMessage(dataMessage.getBlockNum());
         sendMessage(ackMsg);
+
+        // Set the last block acknowledged
+        this.lastBlockAcked = dataMessage.getBlockNum();
 
         LOG.logVerbose("Sent Ack for block: " + ackMsg.getBlockNum());
 

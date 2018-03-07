@@ -18,6 +18,9 @@ public class Parser {
 		case "HELP":
 			cmd = new HelpCommand(tokens);
 			break;
+		case "DEPRESSO":
+			cmd = new DepressedCommand(tokens);
+			break;
 		default:
 			System.out.println("'" + tokens[0] + "' is not a valid command.");
 			cmd = new HelpCommand(tokens);
