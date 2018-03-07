@@ -58,6 +58,7 @@ public class WriteStateTest {
             Mockito.when(mockedFile.canRead()).thenReturn(StateTestConfig.WRITE_FILE_CAN_READ);
             Mockito.when(mockedFile.getName()).thenReturn(StateTestConfig.FILENAME);
             Mockito.when(mockedFile.isFile()).thenReturn(StateTestConfig.IS_FILE);
+            Mockito.when(mockedFile.readFileToBytes()).thenReturn(StateTestConfig.FILE_STRING.getBytes());
 
             // Set up mocked parent file
             Mockito.when(mockedParentFile.exists()).thenReturn(StateTestConfig.PARENT_DIRECTORY_EXISTS);
@@ -164,14 +165,9 @@ public class WriteStateTest {
             String expectedErrorMessage = "Not enough free space";
             byte[] mockResponseErrorBytes = new ErrorMessage(ErrorType.DISK_FULL, expectedErrorMessage).toByteArray();
 
-            // Create mock packet sequence with half the message and then the disk full error message
-            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(true);
-            Mockito.when(resourceManager.readFileToBytes(StateTestConfig.FILENAME)).thenReturn(StateTestConfig.FILE_STRING.getBytes());
-
-
             // build first response as the ack with block 0
             AckMessage mockResponseAckInitial = new AckMessage(0);
-            OngoingStubbing<DatagramPacket> mockResponseBuilder = Mockito.when(socket.receivePacket())
+            OngoingStubbing<DatagramPacket> mockResponseBuilder = Mockito.when(socket.receive())
                     .thenReturn( new DatagramPacket(mockResponseAckInitial.toByteArray(), mockResponseAckInitial.toByteArray().length, connectionManagerSocketAddress));
 
             // build rest of the ack responses for everything but last data block
@@ -184,13 +180,13 @@ public class WriteStateTest {
             mockResponseBuilder.thenReturn(new DatagramPacket(mockResponseErrorBytes, mockResponseErrorBytes.length, connectionManagerSocketAddress));
 
             // Execute function
-            new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
+            new WriteState(serverAddress, resourceManager, StateTestConfig.FILENAME, true, socket).execute();
 
             // verify resourceManager was called
-            Mockito.verify(resourceManager).readFileToBytes((StateTestConfig.FILENAME));
+            Mockito.verify(mockedFile).readFileToBytes();
 
             // Verify number of requests received
-            Mockito.verify(socket, Mockito.times(mockedDataSequence.size() + 1)).receivePacket();
+            Mockito.verify(socket, Mockito.times(mockedDataSequence.size() + 1)).receive();
 
             // Verify first sent request is a WRQ
             inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));
