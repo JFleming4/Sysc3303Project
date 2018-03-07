@@ -93,7 +93,7 @@ public class ReadState extends State implements ISessionHandler {
                 break;
             case FILE_EXISTS:
                 // If the file already exists, stop the session but do not send an error
-                LOG.logQuiet("The file already exists and will not be overwritten. No session will be started with the server.");
+                LOG.logQuiet("The file " + session.getSessionRequest().getFileName() + " already exists and will not be overwritten. No session will be started with the server.");
                 throw new SessionException();
             default:
                 LOG.logVerbose("Error Occurred: " + message.getMessage());

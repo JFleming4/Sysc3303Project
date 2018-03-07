@@ -98,17 +98,17 @@ public class ReadStateTest {
 
         try {
             byte[] expectedRRQBytes = new RequestMessage(MessageType.RRQ, StateTestConfig.FILENAME).toByteArray();
-            Mockito.when(resourceManager.fileExists(StateTestConfig.FILENAME)).thenReturn(true);
+            Mockito.when(mockedFile.exists()).thenReturn(true);
 
             // Execute function
-            new ReadState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket).execute();
+            new ReadState(serverAddress, resourceManager, StateTestConfig.FILENAME, true, socket).execute();
             Mockito.verify(socket, Mockito.times(0)).send(new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, serverAddress));
-            Mockito.verify(socket, Mockito.times(0)).receivePacket();
-            Mockito.verify(resourceManager, Mockito.times(0)).readFileToBytes(StateTestConfig.FILENAME);
+            Mockito.verify(socket, Mockito.times(0)).receive();
+            Mockito.verify(mockedFile, Mockito.times(0)).readFileToBytes();
 
             // Ensure Message is displayed to the user
             Assert.assertTrue("File Not Found User Message Not Found",
-                    outStream.toString().contains("File (" + StateTestConfig.FILENAME + ") already exists on the Client"));
+                    outStream.toString().contains("The file " + StateTestConfig.FILENAME + " already exists and will not be overwritten. No session will be started with the server."));
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
