@@ -6,6 +6,7 @@ import java.io.PrintStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import org.junit.After;
@@ -39,7 +40,11 @@ public class LostPacketStateTest {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		state = new LostPacketState(socket, serverAddress);
+		try {
+			state = new LostPacketState(socket, serverAddress);
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
 	}
 	@After
 	public void tearDown() {
