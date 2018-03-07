@@ -30,6 +30,7 @@ public class LostPacketState extends ForwardState {
 		if (checker.check(packet)) {
 			LOG.logQuiet("Dropping packet.");
 			LOG.logVerbose(packet);
+			return;
 		}
 		super.forwardPacket(packet);
 	}
