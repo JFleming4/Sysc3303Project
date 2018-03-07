@@ -32,7 +32,7 @@ public class ForwardState extends State {
 		while (!connection.isClosed()) {
 			try {
 				LOG.logVerbose("Waiting for request from client");
-				incomingPacket = connection.receivePacket();
+				incomingPacket = connection.receive();
 				forwardPacket(incomingPacket);				
 			} catch (SocketException sE)
 			{
@@ -70,7 +70,7 @@ public class ForwardState extends State {
 			forwardRequest(incomingPacket, serverAddress);
 
 			LOG.logVerbose("Waiting for initial response from server");
-			DatagramPacket serverResponsePacket = connection.receivePacket();
+			DatagramPacket serverResponsePacket = connection.receive();
 
 			// Now we learn the server workers PORT
 			currentServerWorkerPort = serverResponsePacket.getPort();

@@ -38,10 +38,10 @@ public class ErrorChecker {
 			case ERROR:
 				return true;
 			case ACK:
-				packetBlock = AckMessage.parseMessageFromBytes(packet.getData()).getBlockNum();
+				packetBlock = AckMessage.parseMessage(packet.getData()).getBlockNum();
 				break;
 			case DATA:
-				packetBlock = DataMessage.parseMessageFromBytes(packet.getData()).getBlockNum();
+				packetBlock = DataMessage.parseMessage(packet.getData()).getBlockNum();
 				break;
 			}
 			

@@ -54,7 +54,7 @@ public class LostPacketStateTest {
 
 			DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, connectionManagerSocketAddress);
 
-			Mockito.when(socket.receivePacket())
+			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			
@@ -75,7 +75,7 @@ public class LostPacketStateTest {
 
 			DatagramPacket expectedPacket = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, connectionManagerSocketAddress);
 
-			Mockito.when(socket.receivePacket())
+			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			
@@ -96,7 +96,7 @@ public class LostPacketStateTest {
 
 			DatagramPacket expectedPacket = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
 
-			Mockito.when(socket.receivePacket())
+			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			
@@ -119,7 +119,7 @@ public class LostPacketStateTest {
 			byte[] expectedACKBytes = new AckMessage(1).toByteArray();
 
 			DatagramPacket expectedPacket = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, connectionManagerSocketAddress);
-			Mockito.when(socket.receivePacket())
+			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 

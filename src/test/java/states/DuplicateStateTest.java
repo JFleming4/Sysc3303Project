@@ -56,7 +56,7 @@ public class DuplicateStateTest {
 			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
 			DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, connectionManagerSocketAddress);
 			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
-			Mockito.when(socket.receivePacket())
+			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
@@ -78,7 +78,7 @@ public class DuplicateStateTest {
 			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
 			DatagramPacket expectedPacket = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, connectionManagerSocketAddress);
 			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
-			Mockito.when(socket.receivePacket())
+			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
@@ -100,7 +100,7 @@ public class DuplicateStateTest {
 			byte[] expectedACKBytes = new AckMessage(1).toByteArray();
 			DatagramPacket expectedPacket = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
 			DatagramPacket serverResponse = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, connectionManagerSocketAddress);
-			Mockito.when(socket.receivePacket())
+			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
@@ -123,7 +123,7 @@ public class DuplicateStateTest {
 			byte[] expectedACKBytes = new AckMessage(1).toByteArray();
 			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
 			DatagramPacket expectedPacket = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, connectionManagerSocketAddress);
-			Mockito.when(socket.receivePacket())
+			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
