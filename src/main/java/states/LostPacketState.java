@@ -3,6 +3,7 @@ package states;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.net.SocketException;
 
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
@@ -11,12 +12,12 @@ public class LostPacketState extends ForwardState {
 	
 	private ErrorChecker checker;
 	
-	public LostPacketState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker) {
+	public LostPacketState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker) throws SocketException {
 		super(socket, serverAddress);
 		this.checker = checker;
 	}
 	
-	public LostPacketState(TFTPDatagramSocket socket, InetAddress serverAddress) {
+	public LostPacketState(TFTPDatagramSocket socket, InetAddress serverAddress) throws SocketException {
 		this(socket, serverAddress, null);
 	}
 	

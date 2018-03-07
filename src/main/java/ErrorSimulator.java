@@ -1,4 +1,5 @@
 import logging.Logger;
+import parsing.Parser;
 import socket.TFTPDatagramSocket;
 import states.ExitState;
 import states.ForwardState;
@@ -18,12 +19,12 @@ public class ErrorSimulator extends Thread {
 	private static final Logger LOG = new Logger("ErrorSimulator");
 
 	public ErrorSimulator(InetAddress serverAddress) throws SocketException {
-		this(new TFTPDatagramSocket(GLOBAL_CONFIG.SIMULATOR_PORT));
+		this(new TFTPDatagramSocket(GLOBAL_CONFIG.SIMULATOR_PORT), serverAddress);
 	}
 	
-	public ErrorSimulator(TFTPDatagramSocket socket) {
+	public ErrorSimulator(TFTPDatagramSocket socket, InetAddress serverAddress) throws SocketException {
 		this.connection = socket;
-		setState(new ForwardState(connection, connection.getInetAddress()));
+		this.state = new ForwardState(connection, serverAddress);
 		
 		LOG.logQuiet("Listening on port " + connection.getLocalPort());
 		LOG.logQuiet("Server Address: " + connection.getInetAddress());
@@ -35,7 +36,14 @@ public class ErrorSimulator extends Thread {
 		LOG.logQuiet("The simulator connection has been closed.");
 	}
 	
+	public ForwardState getSimulatorState() {
+		if (state instanceof ForwardState)
+			return (ForwardState) this.state;
+		return null;
+	}
+	
 	public void setState(states.State state) {
+		this.state.stopState();
 		this.state = state;
 	}
 
@@ -107,6 +115,7 @@ public class ErrorSimulator extends Thread {
 	}
 
 	public static void main(String[] args) {
+		ForwardState state;
 
 		// Check for help arg
 		if(getOption(args, 'h') > -1)
@@ -130,6 +139,7 @@ public class ErrorSimulator extends Thread {
 		try {
 
 			errorSim = new ErrorSimulator(getServerAddress(args));
+			state = errorSim.getSimulatorState();
 			errorSim.start();
 
 			boolean runSim = true;
@@ -162,8 +172,12 @@ public class ErrorSimulator extends Thread {
 						System.out.println("Commands:\n'exit' -> Shutdown the simulator\n'l' -> Toggle verbose / quiet logging");
 						break;
 					default:
-						System.out.println("'" + command + "' is not a valid command.");
-						System.out.println("Type 'help' for a list of commands");
+						state = Parser.parseStateInformation(
+								command.split(" "),
+								errorSim.getSimulatorState().getConnection(),
+								errorSim.getSimulatorState().getServerAddress()
+								);
+						if (state != null) errorSim.setState(state);;
 						break;
 				}
 			}

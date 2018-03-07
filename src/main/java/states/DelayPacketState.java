@@ -3,6 +3,7 @@ package states;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.net.SocketException;
 
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
@@ -13,13 +14,13 @@ public class DelayPacketState extends ForwardState {
 	private ErrorChecker checker;
 	private long delayInMilliseconds;
 	
-	public DelayPacketState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker, long delayInMilliseconds) {
+	public DelayPacketState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker, long delayInMilliseconds) throws SocketException {
 		super(socket, serverAddress);
 		this.checker = checker;
 		this.delayInMilliseconds = delayInMilliseconds;
 	}
 	
-	public DelayPacketState(TFTPDatagramSocket socket, InetAddress serverAddress) {
+	public DelayPacketState(TFTPDatagramSocket socket, InetAddress serverAddress) throws SocketException {
 		this(socket, serverAddress, null, DEFAULT_DELAY);
 	}
 	

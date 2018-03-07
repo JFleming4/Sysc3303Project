@@ -6,6 +6,7 @@ import java.io.PrintStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import org.junit.After;
@@ -40,7 +41,11 @@ public class DelayPacketStateTest {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		state = new DelayPacketState(socket, serverAddress);
+		try {
+			state = new DelayPacketState(socket, serverAddress);
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
 		thread = new DelayStateThread(state);
 	}
 	@After

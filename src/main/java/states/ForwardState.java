@@ -7,21 +7,26 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 import logging.Logger;
 import socket.TFTPDatagramSocket;
 
 public class ForwardState extends State {
+	private static final int SOCKET_TIMEOUT = 1000;
 	protected static final Logger LOG = new Logger("ErrorSimulator");
 
 	private TFTPDatagramSocket connection;
 	protected InetAddress serverAddress;
 	private InetSocketAddress clientAddress;
 	protected int currentServerWorkerPort;
+	private boolean stopping;
 	
-	public ForwardState(TFTPDatagramSocket connection, InetAddress serverAddress) {
+	public ForwardState(TFTPDatagramSocket connection, InetAddress serverAddress) throws SocketException {
 		this.connection = connection;
+		this.connection.setSoTimeout(SOCKET_TIMEOUT);
 		this.serverAddress = serverAddress;
+		this.stopping = false;
 	}
 
 	@Override
@@ -29,7 +34,7 @@ public class ForwardState extends State {
 		DatagramPacket incomingPacket;
 
 		LOG.logQuiet("Error Simulator is running.");
-		while (!connection.isClosed()) {
+		while (!connection.isClosed() && !stopping) {
 			try {
 				LOG.logVerbose("Waiting for request from client");
 				incomingPacket = connection.receive();
@@ -39,6 +44,10 @@ public class ForwardState extends State {
 				// Socket closed exception
 				if(!connection.isClosed())
 					sE.printStackTrace();
+			}
+			catch (SocketTimeoutException sTE)
+			{
+				continue;
 			}
 			catch (IOException e) {
 				e.printStackTrace();
@@ -97,12 +106,24 @@ public class ForwardState extends State {
 
 	}
 	
+	public void stopState() {
+		this.stopping = true;
+	}
+	
 	public void setServerWorkerPort(int port) {
 		this.currentServerWorkerPort = port;
 	}
 	
 	public void setClientAddress(InetSocketAddress clientAddress) {
 		this.clientAddress = clientAddress;
+	}
+	
+	public TFTPDatagramSocket getConnection() {
+		return this.connection;
+	}
+	
+	public InetAddress getServerAddress() {
+		return this.serverAddress;
 	}
 	
 	/**

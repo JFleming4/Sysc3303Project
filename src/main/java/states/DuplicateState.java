@@ -3,6 +3,7 @@ package states;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.net.SocketException;
 
 import exceptions.InvalidPacketException;
 import formats.Message;
@@ -13,12 +14,12 @@ import util.ErrorChecker;
 public class DuplicateState extends ForwardState {
 	private ErrorChecker checker;
 	
-	public DuplicateState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker) {
+	public DuplicateState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker) throws SocketException {
 		super(socket, serverAddress);
 		this.checker = checker;
 	}
 	
-	public DuplicateState(TFTPDatagramSocket socket, InetAddress serverAddress) {
+	public DuplicateState(TFTPDatagramSocket socket, InetAddress serverAddress) throws SocketException {
 		this(socket, serverAddress, null);
 	}
 	
