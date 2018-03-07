@@ -34,9 +34,9 @@ public class ForwardState extends State {
 		DatagramPacket incomingPacket;
 
 		LOG.logQuiet("Error Simulator is running.");
+		LOG.logVerbose("Waiting for request from client");
 		while (!connection.isClosed() && !stopping) {
 			try {
-				LOG.logVerbose("Waiting for request from client");
 				incomingPacket = connection.receive();
 				forwardPacket(incomingPacket);				
 			} catch (SocketException sE)

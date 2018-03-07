@@ -70,7 +70,7 @@ public class Parser {
 			break;
 		}
 		return state;
-	}
+	}	
 	
 	private static ErrorChecker getChecker(String[] tokens) {
 		MessageType type;

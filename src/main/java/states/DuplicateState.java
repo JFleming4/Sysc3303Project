@@ -31,6 +31,8 @@ public class DuplicateState extends ForwardState {
 	protected void forwardPacket(DatagramPacket packet) throws IOException {
 		super.forwardPacket(packet);
 		if(checker.check(packet)) {
+			LOG.logQuiet("Duplicating packet.");
+			LOG.logVerbose(packet);
 			MessageType type = null;
 			try {
 				type = Message.getMessageType(packet.getData());
@@ -43,5 +45,4 @@ public class DuplicateState extends ForwardState {
 				super.forwardPacket(packet);
 		}
 	}
-
 }

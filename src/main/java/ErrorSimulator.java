@@ -169,7 +169,7 @@ public class ErrorSimulator extends Thread {
 						LOG.logQuiet("Set Log Level to: " + Logger.getLogLevel().name());
 						break;
 					case "help":
-						System.out.println("Commands:\n'exit' -> Shutdown the simulator\n'l' -> Toggle verbose / quiet logging");
+						System.out.println(toHelp());
 						break;
 					default:
 						state = Parser.parseStateInformation(
@@ -190,5 +190,25 @@ public class ErrorSimulator extends Thread {
 		{
 			// Ignore this. Result of empty line buffer in scanner when exiting
 		}
+	}
+	
+	public static String toHelp() {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append("\n==== Commands: ====\n");
+		buffer.append("exit -> Shutdown the simulator\n");
+		buffer.append("l -> Toggle verbose / quiet logging\n");
+		buffer.append("\n==== Error Mode States ====\n");
+		buffer.append("normal\n");
+		buffer.append("dup TYPE [BLOCK_NUM] [REPEAT_INTERVAL]\n");
+		buffer.append("lose TYPE [BLOCK_NUM] [REPEAT_INTERVAL]\n");
+		buffer.append("delay TYPE [BLOCK_NUM] [REPEAT_INTERVAL] DELAY_IN_MILLISECONDS\n");
+		buffer.append("\n==== Packet Types for Error Mode States ====\n");
+		buffer.append("ack, data, rrq, wrq\n");
+		buffer.append("\n==== Example Commands for Error Mode States ====\n");
+		buffer.append("dup ack 4 2 - Duplicate every second packet beginning with number 4.\n");
+		buffer.append("lose data 1 - Lose the first data packet.\n");
+		buffer.append("delay rrq 6000 - Delay RRQ by 6 seconds.\n");
+		buffer.append("delay ack 1 4 6000 - Delay every 4th Ack by 6 seconds.\n");
+		return buffer.toString();
 	}
 }

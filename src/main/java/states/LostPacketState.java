@@ -27,7 +27,10 @@ public class LostPacketState extends ForwardState {
 
 	@Override
 	protected void forwardPacket(DatagramPacket packet) throws IOException {
-		if (checker.check(packet)) return;
+		if (checker.check(packet)) {
+			LOG.logQuiet("Dropping packet.");
+			LOG.logVerbose(packet);
+		}
 		super.forwardPacket(packet);
 	}
 }

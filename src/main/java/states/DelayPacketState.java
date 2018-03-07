@@ -35,11 +35,14 @@ public class DelayPacketState extends ForwardState {
 	@Override
 	protected void forwardPacket(DatagramPacket packet) throws IOException {
 		if (checker.check(packet)) {
+			LOG.logQuiet("Delaying packet by " + delayInMilliseconds + " ms.");
+			LOG.logVerbose(packet);
 			try {
 				Thread.sleep(delayInMilliseconds);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			LOG.logQuiet("Continuing to forward packet.");
 		}
 		super.forwardPacket(packet);
 	}
