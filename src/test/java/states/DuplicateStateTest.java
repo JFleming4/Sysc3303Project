@@ -29,7 +29,7 @@ public class DuplicateStateTest {
 	private TFTPDatagramSocket socket;
 	private ErrorChecker checker;
 	private InetAddress serverAddress;
-	private InetSocketAddress connectionManagerSocketAddress;
+	private InetSocketAddress serverSocketAddress;
 	
 	@Before
 	public void setup() {
@@ -38,7 +38,7 @@ public class DuplicateStateTest {
 		socket = Mockito.mock(TFTPDatagramSocket.class);
 		try {
 			serverAddress = InetAddress.getByName(StateTestConfig.SERVER_HOST);
-			connectionManagerSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
+			serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -59,8 +59,8 @@ public class DuplicateStateTest {
 			state.setErrorChecker(checker);
 			byte[] expectedRRQBytes = new RequestMessage(MessageType.RRQ, StateTestConfig.FILENAME).toByteArray();
 			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
-			DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, connectionManagerSocketAddress);
-			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, serverSocketAddress);
+			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, serverSocketAddress);
 			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
@@ -81,8 +81,8 @@ public class DuplicateStateTest {
 			state.setErrorChecker(checker);
 			byte[] expectedWRQBytes = new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
 			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
-			DatagramPacket expectedPacket = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, connectionManagerSocketAddress);
-			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, serverSocketAddress);
+			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, serverSocketAddress);
 			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
@@ -103,14 +103,14 @@ public class DuplicateStateTest {
 			state.setErrorChecker(checker);
 			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
 			byte[] expectedACKBytes = new AckMessage(1).toByteArray();
-			DatagramPacket expectedPacket = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
-			DatagramPacket serverResponse = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, connectionManagerSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, serverSocketAddress);
+			DatagramPacket serverResponse = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, serverSocketAddress);
 			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			state.setServerWorkerPort(3000);
-			state.setClientAddress(connectionManagerSocketAddress);
+			state.setClientAddress(serverSocketAddress);
 			state.execute();
 			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.eq(3000));
 					
@@ -126,14 +126,14 @@ public class DuplicateStateTest {
 			state.setErrorChecker(checker);
 			byte[] expectedDataBytes = new DataMessage(2, new byte[] { 0 }).toByteArray();
 			byte[] expectedACKBytes = new AckMessage(1).toByteArray();
-			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
-			DatagramPacket expectedPacket = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, connectionManagerSocketAddress);
+			DatagramPacket serverResponse = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, serverSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, serverSocketAddress);
 			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenReturn(serverResponse)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			state.setServerWorkerPort(3000);
-			state.setClientAddress(connectionManagerSocketAddress);
+			state.setClientAddress(serverSocketAddress);
 			state.execute();
 			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.eq(3000));
 					

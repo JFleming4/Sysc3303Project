@@ -28,7 +28,7 @@ public class DelayPacketStateTest {
 	private TFTPDatagramSocket socket;
 	private ErrorChecker checker;
 	private InetAddress serverAddress;
-	private InetSocketAddress connectionManagerSocketAddress;
+	private InetSocketAddress serverSocketAddress;
 	
 	@Before
 	public void setup() {
@@ -37,7 +37,7 @@ public class DelayPacketStateTest {
 		socket = Mockito.mock(TFTPDatagramSocket.class);
 		try {
 			serverAddress = InetAddress.getByName(StateTestConfig.SERVER_HOST);
-			connectionManagerSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
+			serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -60,7 +60,7 @@ public class DelayPacketStateTest {
 
 			byte[] expectedRRQBytes = new RequestMessage(MessageType.RRQ, StateTestConfig.FILENAME).toByteArray();
 
-			DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, connectionManagerSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, serverSocketAddress);
 
 			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
@@ -82,7 +82,7 @@ public class DelayPacketStateTest {
 			state.setErrorChecker(checker);
 			byte[] expectedWRQBytes = new RequestMessage(MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
 
-			DatagramPacket expectedPacket = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, connectionManagerSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, serverSocketAddress);
 
 			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
@@ -104,14 +104,14 @@ public class DelayPacketStateTest {
 			state.setErrorChecker(checker);
 			byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
 
-			DatagramPacket expectedPacket = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, connectionManagerSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, serverSocketAddress);
 
 			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			
 			state.setServerWorkerPort(3000);
-			state.setClientAddress(connectionManagerSocketAddress);
+			state.setClientAddress(serverSocketAddress);
 			
 			thread.start();
 			
@@ -132,13 +132,13 @@ public class DelayPacketStateTest {
 
 			byte[] expectedACKBytes = new AckMessage(1).toByteArray();
 
-			DatagramPacket expectedPacket = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, connectionManagerSocketAddress);
+			DatagramPacket expectedPacket = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, serverSocketAddress);
 			Mockito.when(socket.receive())
 				.thenReturn(expectedPacket)
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 
 			state.setServerWorkerPort(3000);
-			state.setClientAddress(connectionManagerSocketAddress);
+			state.setClientAddress(serverSocketAddress);
 			
 			thread.start();
 			
