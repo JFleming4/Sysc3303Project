@@ -86,8 +86,8 @@ public class ForwardState extends State {
 			LOG.logVerbose("Received server response. Worker thread port: " + currentServerWorkerPort);
 
 			// Now forward the initial response back to client
-			connection.forwardPacket(serverResponsePacket, clientAddress);
 			LOG.logQuiet("Forwarding initial response to client");
+			forwardPacket(serverResponsePacket);
 		}
 		// If the packet is from the server worker
 		// We are going to forward the packet to the current client
