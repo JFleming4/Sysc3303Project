@@ -21,6 +21,7 @@ import formats.RequestMessage;
 import formats.Message.MessageType;
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
+import static resources.Configuration.GLOBAL_CONFIG;
 
 public class LostPacketStateTest {
 	private LostPacketState state;
@@ -36,7 +37,7 @@ public class LostPacketStateTest {
 		socket = Mockito.mock(TFTPDatagramSocket.class);
 		try {
 			serverAddress = InetAddress.getByName(StateTestConfig.SERVER_HOST);
-			serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
+			serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), GLOBAL_CONFIG.SERVER_PORT);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -65,7 +66,7 @@ public class LostPacketStateTest {
 			
 			state.execute();
 			
-			Mockito.verify(socket, Mockito.times(0)).forwardPacket(expectedPacket, serverAddress, 69);		
+			Mockito.verify(socket, Mockito.times(0)).forwardPacket(expectedPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);		
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
         }
@@ -85,7 +86,7 @@ public class LostPacketStateTest {
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			
 			state.execute();
-			Mockito.verify(socket, Mockito.times(0)).forwardPacket(expectedPacket, serverAddress, 69);
+			Mockito.verify(socket, Mockito.times(0)).forwardPacket(expectedPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
 					
 		} catch (IOException e) {
             Assert.fail(e.getMessage());

@@ -24,6 +24,7 @@ import formats.Message.MessageType;
 import resources.ResourceFile;
 import resources.ResourceManager;
 import socket.TFTPDatagramSocket;
+import static resources.Configuration.GLOBAL_CONFIG;
 
 public class ReadStateTest {
 	private TFTPDatagramSocket socket;
@@ -42,8 +43,8 @@ public class ReadStateTest {
         mockedParentFile = Mockito.mock(File.class);
 
         try {
-            serverAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 69);
-            connectionManagerSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
+            serverAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), GLOBAL_CONFIG.SERVER_PORT);
+            connectionManagerSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), GLOBAL_CONFIG.SERVER_PORT);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }

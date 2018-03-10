@@ -61,7 +61,7 @@ public class ForwardState extends State {
 	}
 	
 	protected void forwardRequest(DatagramPacket incomingPacket, InetAddress serverAddress) throws IOException {
-		connection.forwardPacket(incomingPacket, serverAddress, incomingPacket.getPort());
+		connection.forwardPacket(incomingPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
 	}
 	protected void forwardPacket(DatagramPacket incomingPacket) throws IOException {
 		InetAddress incomingAddr = incomingPacket.getAddress();
