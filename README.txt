@@ -6,14 +6,19 @@ Team contribution breakdown:
 ============================
 Justin Fleming: 100934170
     - Handle IO Errors
+    - Error Simulator
 Noah Segal: 100911661
     - Handle IO Errors
+    - Handle duplicate, delay, lost packets
 Derek Stride: 100955939
     - Refactor to introduce state-based behaviour
+    - Error Simulator
 Michael Vezina: 100934579
     - UML & Timing Diagrams
+    - Handle duplicate, delay, lost packets
 Irusha Vidanamadura: 100935300
     - Testing & Integration
+    - UML & Timing Diagrams
 
 
 Setup Instructions:
@@ -25,6 +30,13 @@ To start the project run the class FTPServer. Enter `help` into the command line
 [ Optional Step - Error Simulator ]
 Start the Error Simulator by running the class ErrorSimulator. This is REQUIRED to use the -t (test) option when sending requests from the client, otherwise the request will fail.
 
+Error Simulator Commands + Example:
+ - lose: (lose DATA 1 0) drops the first data packet and all subsequent packets (2, 3, 4, etc.)
+ - dup: (dup DATA 1 2) duplicates the first data packet and every second subsequent packet (3, 5, 7, etc.)
+ - delay: (delay DATA 1 0 69000) delays the first data packet and all subsequent packets (2, 3, 4, etc.) for 69 seconds.
+ - normal: normal operation
+ - help: "I need somebody! Help! Not just anybody!" – Lennon-McCartney. (You should know what this operation does)
+
 Next, start the client by running the class FTPClient. Again, you can enter `help` into the command line interface to view the available options.
 
 Run the following commands to test reading and writing to the server. You can add the `-v` flag to enable verbose logging and
@@ -33,6 +45,10 @@ Run the following commands to test reading and writing to the server. You can ad
 read read-test.txt localhost
 write write-test.txt localhost
 
+NOTE:
+    If the ACK packet on the last DATA block is lost then the receiving node (Client or Server) will fail.
+    However, the session still succeeds with the sending of the ACK.
+    This follows the TFTP specification and is impossible to fix due to the socket timeout being the same for both sides (Client & Server)
 
 Error Testing:
 ==============
@@ -66,7 +82,30 @@ FILE ALREADY EXISTS:
 	- 'read read-test.txt localhost' (first attempt, which creates te file)
 	- 'read read-test.txt localhost' (second attempt, which returns an error)
 
+DUPLICATE PACKET:
+- ErrorSim:
+	- 'dup DATA 1 2' (duplicate the first DATA packet and every second (3, 5, 7, etc.)
+- Client:
+	- 'read read-test.txt localhost'
+	or
+	- 'write write-test.txt localhost'
 
+LOST PACKET:
+- ErrorSim:
+	- 'lost DATA 1 2' (loses the first DATA packet and every second (3, 5, 7, etc.)
+- Client:
+	- 'read read-test.txt localhost'
+	or
+	- 'write write-test.txt localhost'
+	
+DELAYED PACKET:
+- ErrorSim:
+	- 'delay DATA 1 2' (delays the first DATA packet and every second (3, 5, 7, etc.)
+- Client:
+	- 'read read-test.txt localhost'
+	or
+	- 'write write-test.txt localhost'
+	
 Test File Locations:
 ====================
 The locations for reading and writing are listed under the `resources` folder.
@@ -93,14 +132,18 @@ Project Structure:
     - logging/ - Simple logger
     - parsing/ - FTPClient command line interface actions separated by command
     - resources/ - Contains class for file i/o
-    - socket/TFTPDatagramSocket.java - A wrapper around DatagramSocket for ease of use
+    - session/ - Sessions for receiving and transmitting
+    - socket/ - Contains TFTPDatagramSocket
     - states/ - State behaviour for reading, writing, input, and exiting
+    - util/ - Determine if the ErrorSim needs to alter the packets
     - ErrorSimulator.java - The Error Simulator
     - FTPClient.java - The Java Client
     - FTPServer.java - The Java server
 /src/test/java/
     - formats/ - Message Testing suite
     - parsing/ - Client Command tests
+    - states/ - Session Testing suite
+    - util/ - Util Testing suite
 /resources/client - The directory where the client looks for reads/writes
 /resources/server - The directory where the server looks for reads/writes
 /resources/diagrams - The diagrams required for this iteration
