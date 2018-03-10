@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.List;
 
@@ -202,13 +203,16 @@ public class ReadStateTest {
                 mockResponseBuilder.thenReturn(new DatagramPacket(mockedDataSequence.get(i).toByteArray(), mockedDataSequence.get(i).toByteArray().length, connectionManagerSocketAddress));
             }
 
+            mockResponseBuilder.thenThrow(new SocketTimeoutException());
+
             // Execute function
             ReadState readState = new ReadState(serverAddress, resourceManager, StateTestConfig.FILENAME, false, socket);
             readState.execute();
 
 
             // Verify number of requests received
-            Mockito.verify(socket, Mockito.times(mockedDataSequence.size())).receive();
+            // (+ 1 for the last receive to ensure last DATA ACK was received correctly)
+            Mockito.verify(socket, Mockito.times(mockedDataSequence.size() + 1)).receive();
 
             // Verify first sent request is a RRRQ
             inOrder.verify(socket).sendMessage(requestArgument.capture(), Mockito.eq(serverAddress));

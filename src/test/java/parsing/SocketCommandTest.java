@@ -47,7 +47,7 @@ public class SocketCommandTest extends CommandTest {
 	
 	@Test
 	public void testIsVerbose() { 
-		if (tokens.contains("-v") || tokens.contains("--verbose"))
+		if (tokens.contains("-v") || tokens.contains("--verbose") || GLOBAL_CONFIG.DEBUG_MODE)
 			assertTrue(socketCmd.isVerbose());
 		else
 			assertFalse(socketCmd.isVerbose());

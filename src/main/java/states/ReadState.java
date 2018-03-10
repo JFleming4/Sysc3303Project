@@ -15,8 +15,9 @@ import session.ReceiveSession;
 import session.TFTPSession;
 import socket.TFTPDatagramSocket;
 
+import static resources.Configuration.GLOBAL_CONFIG;
+
 public class ReadState extends State implements ISessionHandler {
-    private static final int SOCKET_TIMEOUT = 5000;
 
     private TFTPDatagramSocket socket;
     private ResourceManager resourceManager;
@@ -35,7 +36,7 @@ public class ReadState extends State implements ISessionHandler {
         this.filename = filename;
 
         this.socket = socket;
-        this.socket.setSoTimeout(SOCKET_TIMEOUT);
+        this.socket.setSoTimeout(GLOBAL_CONFIG.SOCKET_TIMEOUT_MS);
         this.resourceManager = resourceManager;
 
         if (isVerbose)
@@ -97,6 +98,10 @@ public class ReadState extends State implements ISessionHandler {
                 throw new SessionException();
             default:
                 LOG.logVerbose("Error Occurred: " + message.getMessage());
+
+                // Delete file on Error
+                session.getResourceFile().delete();
+
                 // All other errors will be raised.
                 session.raiseError(message);
                 break;
@@ -115,15 +120,9 @@ public class ReadState extends State implements ISessionHandler {
         LOG.logQuiet("The following ERROR was received from the server: " + message.getMessage());
         LOG.logVerbose(message);
 
-        // Remove the file, as it is incomplete
-        ResourceFile file = session.getResourceFile();
-
         LOG.logQuiet("Failed to receive correct file.");
 
-        // Remove file
-        if(file.delete())
-            LOG.logQuiet("Deleted partial file: " + file.getName());
-        else
-            LOG.logQuiet("Failed to delete partial file: " + file.getName());
+        // Delete file on Error
+        session.getResourceFile().delete();
     }
 }

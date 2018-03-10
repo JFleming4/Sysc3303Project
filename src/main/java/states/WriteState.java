@@ -13,8 +13,9 @@ import session.TFTPSession;
 import session.TransmitSession;
 import socket.TFTPDatagramSocket;
 
+import static resources.Configuration.GLOBAL_CONFIG;
+
 public class WriteState extends State implements ISessionHandler{
-	private static final int SOCKET_TIMEOUT = 5000;
 	private TFTPDatagramSocket socket;
 	private ResourceManager resourceManager;
 	private SocketAddress serverAddress;
@@ -30,7 +31,7 @@ public class WriteState extends State implements ISessionHandler{
         this.filename = filename;
 
         this.socket = socket;
-        this.socket.setSoTimeout(SOCKET_TIMEOUT);
+        this.socket.setSoTimeout(GLOBAL_CONFIG.SOCKET_TIMEOUT_MS);
         this.resourceManager = resourceManager;
         if (isVerbose)
             Logger.setLogLevel(Logger.LogLevel.VERBOSE);
@@ -50,8 +51,9 @@ public class WriteState extends State implements ISessionHandler{
 
         // Create the request message
         RequestMessage initialReq = new RequestMessage(MessageType.WRQ, filename);
-        System.out.println((new TransmitSession(this, initialReq, serverAddress).getSessionSuccess()));
 
+        // Create & Run Transmit Session
+        new TransmitSession(this, initialReq, serverAddress);
 
         return new InputState();
     }

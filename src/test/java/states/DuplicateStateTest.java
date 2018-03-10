@@ -26,7 +26,7 @@ import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 import static resources.Configuration.GLOBAL_CONFIG;
 public class DuplicateStateTest {
-//  lose a packet; 2 : delay a packet, 3 : duplicate a
+//  lose a packet; 2 : delay a packet, 3 : duplicate a
 	// packet.
 	private DuplicateState state;
 	private TFTPDatagramSocket socket;

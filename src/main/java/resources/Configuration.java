@@ -18,6 +18,8 @@ public class Configuration {
     public final boolean DEBUG_MODE;
     public final String CLIENT_RESOURCE_DIR;
     public final String SERVER_RESOURCE_DIR;
+    public final int MAX_TRANSMIT_ATTEMPTS;
+    public final int SOCKET_TIMEOUT_MS;
 
     public Configuration()
     {
@@ -25,6 +27,8 @@ public class Configuration {
         DEBUG_MODE = false;
         SERVER_PORT = 69;
         SIMULATOR_PORT = 23;
+        MAX_TRANSMIT_ATTEMPTS = 5;
+        SOCKET_TIMEOUT_MS = 5000;
         CLIENT_RESOURCE_DIR = "client";
         SERVER_RESOURCE_DIR = "server";
     }

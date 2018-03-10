@@ -8,6 +8,7 @@ import formats.Message;
 import formats.Message.MessageType;
 import formats.RequestMessage;
 import logging.Logger;
+import resources.Configuration;
 import resources.ResourceFile;
 import socket.TFTPDatagramSocket;
 
@@ -17,7 +18,7 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
-public abstract class TFTPSession{
+public abstract class TFTPSession {
 
     private static final Logger LOG = new Logger("TFTPSession");
     protected ISessionHandler sessionHandler;
@@ -25,19 +26,22 @@ public abstract class TFTPSession{
     private RequestMessage sessionRequest;
     private SocketAddress currentDestAdr;
     private boolean sessionComplete;
+    private boolean sessionCompleteOnTimeout;
     private boolean sessionSuccess;
     private ResourceFile resourceFile;
     private MessageType incomingMessageType;
+    private Message lastMessageSent;
 
     /**
      * Initializes a TFTP Session Object with a SessionHandler and the incoming message type.
-     * @param sessionHandler The session handler to handle errors etc.
+     * @param sessionHandler      The session handler to handle errors etc.
      * @param incomingMessageType The message type to expect when receiving messages.
      */
     protected TFTPSession(ISessionHandler sessionHandler, MessageType incomingMessageType) {
         this.sessionHandler = sessionHandler;
         this.socket = sessionHandler.getSessionTFTPSocket();
         this.sessionComplete = false;
+        this.sessionCompleteOnTimeout = false;
         this.sessionSuccess = false;
         this.incomingMessageType = incomingMessageType;
     }
@@ -53,7 +57,7 @@ public abstract class TFTPSession{
     /**
      * Runs the TFTPSession.
      * @param requestMessage The Initial request message
-     * @param destAdr The socket to send the initial request to.
+     * @param destAdr        The socket to send the initial request to.
      * @return True if the session ran successfully, False otherwise
      */
     public synchronized boolean runSession(RequestMessage requestMessage, SocketAddress destAdr) {
@@ -91,7 +95,7 @@ public abstract class TFTPSession{
                 // show issues in sending the message packets)
                 LOG.logQuiet("Socket Exception occurred: " + sE);
                 throw new SessionException();
-            }catch (ResourceException rE) {
+            } catch (ResourceException rE) {
                 // Stop the session without sending an ERROR message to the destination
                 LOG.logVerbose("A Resource Exception has Occurred: " + rE);
                 throw new SessionException();
@@ -130,7 +134,7 @@ public abstract class TFTPSession{
             setSessionComplete();
         }
 
-        if(sessionSuccess)
+        if (sessionSuccess)
             LOG.logQuiet("The TFTP Session has completed successfully.");
         else
             LOG.logQuiet("The TFTP Session Failed.");
@@ -148,9 +152,43 @@ public abstract class TFTPSession{
      * @throws SessionException
      */
     private synchronized void run() throws InvalidPacketException, IOException, SessionException {
-        // After initialize, we expect a message to be received
-        // Wait for Message
-        DatagramPacket packet = socket.receive();
+
+        // Initialize packet to null so we can check for receive failure
+        DatagramPacket packet = null;
+        int numRetries = 0;
+
+        // Number of retransmit attempts
+        while (numRetries++ < Configuration.GLOBAL_CONFIG.MAX_TRANSMIT_ATTEMPTS) {
+
+            // Log number of attempts
+            if(numRetries > 1)
+                LOG.logVerbose("Waiting for Response from destination. Attempt # " + numRetries);
+
+            try {
+                // After initialize, we expect a message to be received
+                // Wait for Message
+                packet = socket.receive();
+                break;
+            } catch (SocketTimeoutException stE) {
+                if(sessionCompleteOnTimeout) {
+                    LOG.logVerbose("Session Success On Timeout");
+                    // Handles the case where the last ACK may be lost.
+                    // This ensures that a packet has not been retransmitted, therefore the packet was not lost.
+                    setSessionComplete();
+                    return;
+                }
+                else {
+                    LOG.logVerbose("Failed to receive a response from the destination (Timed Out). Sending last message");
+                    resendLastMessage();
+                }
+            }
+        }
+
+        // Check to see if receive was successful
+        if (packet == null) {
+            LOG.logQuiet("Failed to receive a response from the destination. Stopping the session");
+            throw new SessionException();
+        }
 
         // Set current destination to most recent packet socket address
         this.currentDestAdr = packet.getSocketAddress();
@@ -178,6 +216,19 @@ public abstract class TFTPSession{
     }
 
     /**
+     * Resends last sent message (for lost/delayed messages)
+     * @throws IOException
+     * @throws SessionException
+     */
+    private synchronized void resendLastMessage() throws IOException, SessionException {
+        if (lastMessageSent == null)
+            return;
+
+        LOG.logVerbose("Attempting to re-transmit last message");
+        sendMessage(lastMessageSent);
+    }
+
+    /**
      * Sends a Message to the destination.
      * @param message The Message Object to send. If type is ERROR, equivalent to call to {@link #raiseError(ErrorMessage)}
      * @throws IOException
@@ -185,11 +236,12 @@ public abstract class TFTPSession{
     protected synchronized final void sendMessage(Message message) throws IOException, SessionException {
 
         // Any ERROR messages passed in will be passed to raiseError
-        if(message.getMessageType().equals(MessageType.ERROR)) {
+        if (message.getMessageType().equals(MessageType.ERROR)) {
             raiseError((ErrorMessage) message);
             return;
         }
 
+        lastMessageSent = message;
         socket.sendMessage(message, currentDestAdr);
     }
 
@@ -201,11 +253,15 @@ public abstract class TFTPSession{
         this.sessionComplete = true;
     }
 
+    protected synchronized final void setSessionCompleteOnTimeout() {
+        LOG.logVerbose("Session will complete on socket timeout to ensure no messages are resent");
+        this.sessionCompleteOnTimeout = true;
+    }
+
     /**
      * @return The initial session request message
      */
     public synchronized RequestMessage getSessionRequest() {
-
         return sessionRequest;
     }
 

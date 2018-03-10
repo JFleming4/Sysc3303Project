@@ -18,6 +18,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.SocketException;
 
+import java.net.SocketTimeoutException;
 import java.util.*;
 
 import static resources.Configuration.GLOBAL_CONFIG;
@@ -104,6 +105,8 @@ public class FTPServer extends Thread {
                 // Add worker thread to our listing
                 this.serverWorkers.add(worker);
 
+            } catch (SocketTimeoutException sTE) {
+                // Let socket timeouts pass through
             } catch (SocketException sE) {
                 // If the socket was just closed, do not print the stack trace
                 if (!connection.isClosed())
@@ -196,6 +199,7 @@ class ServerWorker extends Thread implements ISessionHandler {
             try {
                 // Create the socket within the context of the thread
                 socket = new TFTPDatagramSocket();
+                socket.setSoTimeout(GLOBAL_CONFIG.SOCKET_TIMEOUT_MS);
 
                 // Parse data into a DAO that is accessible
                 RequestMessage receivedMessage = RequestMessage.parseMessage(this.packet);

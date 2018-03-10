@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 
 import static formats.Message.MessageType.DATA;
+import static resources.Configuration.GLOBAL_CONFIG;
 
 /**
  * A 'ReceiveSession' is an abstract concept, and is not specific to the client or the server.
@@ -27,8 +28,8 @@ public class ReceiveSession extends TFTPSession {
 
     private static final Logger LOG = new Logger("ReceiveSession");
     private static final MessageType INCOMING_MESSAGE_TYPE = DATA;
-
-    private int expectedBlockNumber;
+    private int lastBlockAcked;
+    private int lastBlockReceivedCount;
 
     /**
      * Creates a new Session given a Session Handler
@@ -45,6 +46,7 @@ public class ReceiveSession extends TFTPSession {
     public ReceiveSession(ISessionHandler sessionHandler, RequestMessage requestMessage, SocketAddress destAdr) {
         this(sessionHandler);
         this.runSession(requestMessage, destAdr);
+        this.lastBlockReceivedCount = 0;
     }
 
 
@@ -59,12 +61,18 @@ public class ReceiveSession extends TFTPSession {
         // It is safe to assume that the message passed in will be of type DataMessage
         DataMessage dataMessage = (DataMessage) message;
 
-        ResourceFile resourceFile = getResourceFile();
+        if (dataMessage.getBlockNum() < lastBlockAcked) {
+            LOG.logVerbose("Received DATA with old block: " + dataMessage.getBlockNum() + ". Ignoring DATA block");
+            return;
+        }
 
-        // Confirm expected block number
-        // This is where we can handle duplicate or missing ACK messages
-        if (dataMessage.getBlockNum() != expectedBlockNumber)
-            sessionHandler.sessionErrorOccurred(this, new ErrorMessage(ErrorMessage.ErrorType.ILLEGAL_OPERATION, "Incorrect Block Number. Expecting: " + expectedBlockNumber + ", Actual: " + dataMessage.getBlockNum()));
+        if (dataMessage.getBlockNum() == lastBlockAcked) {
+            LOG.logVerbose("Received Retransmitted DATA with block: " + dataMessage.getBlockNum());
+            sendAckForData(dataMessage);
+            return;
+        }
+
+        ResourceFile resourceFile = getResourceFile();
 
         // Check to see if there is enough usable space
         int numBytesToWrite = dataMessage.getDataSize();
@@ -100,19 +108,36 @@ public class ReceiveSession extends TFTPSession {
         AckMessage ackMsg = new AckMessage(dataMessage.getBlockNum());
         sendMessage(ackMsg);
 
+        // Set the last block acknowledged
+        this.lastBlockAcked = dataMessage.getBlockNum();
+
         LOG.logVerbose("Sent Ack for block: " + ackMsg.getBlockNum());
 
         // Check if this was the last block
         if (dataMessage.isFinalBlock()) {
-            LOG.logVerbose("End of read file reached");
-            LOG.logQuiet("Successfully received file");
 
-            // Tell the session it is now complete
-            setSessionComplete();
-            return;
+            lastBlockReceivedCount++;
+
+            // Fail session if the destination fails to receive the last ACK multiple times
+            if(lastBlockReceivedCount > GLOBAL_CONFIG.MAX_TRANSMIT_ATTEMPTS)
+            {
+                LOG.logQuiet("Failed to complete receive session. Destination failed to receive last block acknowledgement");
+                throw new SessionException();
+            }
+
+            if(lastBlockReceivedCount == 1)
+            {
+                LOG.logVerbose("End of read file reached");
+                LOG.logQuiet("Successfully received file.");
+            }
+            else if(lastBlockReceivedCount > 1)
+            {
+                LOG.logVerbose("Attempting to send last block ACK. Attempt # " + lastBlockReceivedCount);
+            }
+
+            // Tell the session it is now complete once we timeout on the next receive
+            setSessionCompleteOnTimeout();
         }
-
-        expectedBlockNumber++;
     }
 
     /**
@@ -147,8 +172,5 @@ public class ReceiveSession extends TFTPSession {
             AckMessage wrqAck = new AckMessage(0);
             sendMessage(wrqAck);
         }
-
-        // Initialize expected block number to 1
-        this.expectedBlockNumber = 1;
     }
 }
