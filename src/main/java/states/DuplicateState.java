@@ -1,5 +1,7 @@
 package states;
 
+import static resources.Configuration.GLOBAL_CONFIG;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;

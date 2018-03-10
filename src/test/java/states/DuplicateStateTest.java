@@ -24,7 +24,7 @@ import formats.RequestMessage;
 import formats.Message.MessageType;
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
-
+import static resources.Configuration.GLOBAL_CONFIG;
 public class DuplicateStateTest {
 //  lose a packet; 2 : delay a packet, 3 : duplicate a
 	// packet.
@@ -41,7 +41,7 @@ public class DuplicateStateTest {
 		socket = Mockito.mock(TFTPDatagramSocket.class);
 		try {
 			serverAddress = InetAddress.getByName(StateTestConfig.SERVER_HOST);
-			serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
+			serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), GLOBAL_CONFIG.SERVER_PORT);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -71,7 +71,7 @@ public class DuplicateStateTest {
 			
 			state.execute();
 			DatagramPacketMatcher matcher = new DatagramPacketMatcher(expectedPacket);
-			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(1069));
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(GLOBAL_CONFIG.SERVER_PORT));
 					
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
@@ -94,7 +94,7 @@ public class DuplicateStateTest {
 			
 			state.execute();
 			DatagramPacketMatcher matcher = new DatagramPacketMatcher(expectedPacket);
-			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(1069));
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(GLOBAL_CONFIG.SERVER_PORT));
 					
 		} catch (IOException e) {
             Assert.fail(e.getMessage());

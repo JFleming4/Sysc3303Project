@@ -22,6 +22,8 @@ import formats.Message.MessageType;
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 
+import static resources.Configuration.GLOBAL_CONFIG;
+
 public class DelayPacketStateTest {
 	private DelayPacketState state;
 	private DelayStateThread thread;
@@ -37,7 +39,7 @@ public class DelayPacketStateTest {
 		socket = Mockito.mock(TFTPDatagramSocket.class);
 		try {
 			serverAddress = InetAddress.getByName(StateTestConfig.SERVER_HOST);
-			serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), 1069);
+			serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), GLOBAL_CONFIG.SERVER_PORT);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -68,8 +70,8 @@ public class DelayPacketStateTest {
 			
 			thread.start();
 
-			Mockito.verify(socket, Mockito.after(0).never()).forwardPacket(expectedPacket, serverAddress, 1069);
-			Mockito.verify(socket, Mockito.after(DelayPacketState.DEFAULT_DELAY * 2).times(1)).forwardPacket(expectedPacket, serverAddress, 1069);
+			Mockito.verify(socket, Mockito.after(0).never()).forwardPacket(expectedPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
+			Mockito.verify(socket, Mockito.after(DelayPacketState.DEFAULT_DELAY * 2).times(1)).forwardPacket(expectedPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
         }
@@ -90,8 +92,8 @@ public class DelayPacketStateTest {
 			
 			thread.start();
 			
-			Mockito.verify(socket, Mockito.after(0).never()).forwardPacket(expectedPacket, serverAddress, 1069);
-			Mockito.verify(socket, Mockito.after(DelayPacketState.DEFAULT_DELAY * 2).times(1)).forwardPacket(expectedPacket, serverAddress, 1069);	
+			Mockito.verify(socket, Mockito.after(0).never()).forwardPacket(expectedPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
+			Mockito.verify(socket, Mockito.after(DelayPacketState.DEFAULT_DELAY * 2).times(1)).forwardPacket(expectedPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);	
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
         }
