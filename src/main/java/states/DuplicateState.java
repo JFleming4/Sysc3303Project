@@ -29,7 +29,7 @@ public class DuplicateState extends ForwardState {
 	
 	@Override
 	protected void forwardPacket(DatagramPacket packet) throws IOException {
-		super.forwardPacket(packet);
+		super.forwardPacket(new DatagramPacket(packet.getData(), packet.getLength(), packet.getSocketAddress()));
 		if(checker.check(packet)) {
 			LOG.logQuiet("Duplicating packet.");
 			LOG.logVerbose(packet);

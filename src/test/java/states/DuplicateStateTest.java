@@ -13,10 +13,13 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
+import exceptions.InvalidPacketException;
 import formats.AckMessage;
 import formats.DataMessage;
+import formats.Message;
 import formats.RequestMessage;
 import formats.Message.MessageType;
 import socket.TFTPDatagramSocket;
@@ -67,7 +70,8 @@ public class DuplicateStateTest {
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			
 			state.execute();
-			Mockito.verify(socket, Mockito.times(2)).forwardPacket(expectedPacket, serverAddress, 69);
+			DatagramPacketMatcher matcher = new DatagramPacketMatcher(expectedPacket);
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(1069));
 					
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
@@ -89,7 +93,8 @@ public class DuplicateStateTest {
 				.thenThrow(new RuntimeException("TEST EXCEPTION"));
 			
 			state.execute();
-			Mockito.verify(socket, Mockito.times(2)).forwardPacket(expectedPacket, serverAddress, 69);
+			DatagramPacketMatcher matcher = new DatagramPacketMatcher(expectedPacket);
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(1069));
 					
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
@@ -112,8 +117,8 @@ public class DuplicateStateTest {
 			state.setServerWorkerPort(3000);
 			state.setClientAddress(serverSocketAddress);
 			state.execute();
-			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.eq(3000));
-					
+			DatagramPacketMatcher matcher = new DatagramPacketMatcher(expectedPacket);
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(3000));
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
         }
@@ -135,11 +140,31 @@ public class DuplicateStateTest {
 			state.setServerWorkerPort(3000);
 			state.setClientAddress(serverSocketAddress);
 			state.execute();
-			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.eq(3000));
+			DatagramPacketMatcher matcher = new DatagramPacketMatcher(expectedPacket);
+			Mockito.verify(socket, Mockito.times(2)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(3000));
 					
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
         }
 	}
 
+}
+
+class DatagramPacketMatcher implements ArgumentMatcher<DatagramPacket> {
+	private DatagramPacket packet;
+	
+	public DatagramPacketMatcher(DatagramPacket packet) {
+		this.packet = packet;
+	}
+	
+	@Override
+	public boolean matches(DatagramPacket p) {
+		try {
+			return Message.parseGenericMessage(packet)
+					.equals(Message.parseGenericMessage(p));
+		} catch (InvalidPacketException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
 }

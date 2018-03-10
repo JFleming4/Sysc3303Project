@@ -61,7 +61,7 @@ public class ForwardState extends State {
 	}
 	
 	protected void forwardRequest(DatagramPacket incomingPacket, InetAddress serverAddress) throws IOException {
-		connection.forwardPacket(incomingPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
+		connection.forwardPacket(incomingPacket, serverAddress, incomingPacket.getPort());
 	}
 	protected void forwardPacket(DatagramPacket incomingPacket) throws IOException {
 		InetAddress incomingAddr = incomingPacket.getAddress();
@@ -93,14 +93,14 @@ public class ForwardState extends State {
 		// We are going to forward the packet to the current client
 		else if(!isFromClient(incomingAddr, incomingPort) && isFromServerWorker(incomingAddr, incomingPort))
 		{
-			LOG.logQuiet("Received message from client. Forwarding to server.");
+			LOG.logQuiet("Received message from server. Forwarding to client.");
 			connection.forwardPacket(incomingPacket, clientAddress);
 		}
 		// If the packet is from the current client
 		// We are going to forward the packet to the server
 		else if(!isFromServerWorker(incomingAddr, incomingPort) && isFromClient(incomingAddr, incomingPort))
 		{
-			LOG.logQuiet("Received message from server. Forwarding to client.");
+			LOG.logQuiet("Received message from client. Forwarding to server.");
 			connection.forwardPacket(incomingPacket, serverAddress, currentServerWorkerPort);
 		}
 

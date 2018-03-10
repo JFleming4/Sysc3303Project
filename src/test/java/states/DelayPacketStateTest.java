@@ -68,8 +68,8 @@ public class DelayPacketStateTest {
 			
 			thread.start();
 
-			Mockito.verify(socket, Mockito.after(0).never()).forwardPacket(expectedPacket, serverAddress, 69);
-			Mockito.verify(socket, Mockito.after(DelayPacketState.DEFAULT_DELAY * 2).times(1)).forwardPacket(expectedPacket, serverAddress, 69);
+			Mockito.verify(socket, Mockito.after(0).never()).forwardPacket(expectedPacket, serverAddress, 1069);
+			Mockito.verify(socket, Mockito.after(DelayPacketState.DEFAULT_DELAY * 2).times(1)).forwardPacket(expectedPacket, serverAddress, 1069);
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
         }
@@ -90,8 +90,8 @@ public class DelayPacketStateTest {
 			
 			thread.start();
 			
-			Mockito.verify(socket, Mockito.after(0).never()).forwardPacket(expectedPacket, serverAddress, 69);
-			Mockito.verify(socket, Mockito.after(DelayPacketState.DEFAULT_DELAY * 2).times(1)).forwardPacket(expectedPacket, serverAddress, 69);	
+			Mockito.verify(socket, Mockito.after(0).never()).forwardPacket(expectedPacket, serverAddress, 1069);
+			Mockito.verify(socket, Mockito.after(DelayPacketState.DEFAULT_DELAY * 2).times(1)).forwardPacket(expectedPacket, serverAddress, 1069);	
 		} catch (IOException e) {
             Assert.fail(e.getMessage());
         }
