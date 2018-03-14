@@ -18,7 +18,7 @@ public class RequestMessageTest {
     private RequestMessage validRRQMessage;
     private RequestMessage validWRQMessage;
     private String validFileName;
-    private String validMode;
+    private RequestMessage.MessageMode validMode;
     private Map<RequestMessage, byte[]> validParseData;
     private List<Pair<String, byte[]>> invalidParseData;
     private List<MessageType> requestTypes;
@@ -30,7 +30,7 @@ public class RequestMessageTest {
     public void setUp() throws IOException
     {
         this.validFileName = "test.txt";
-        this.validMode = "NetAscii";
+        this.validMode = RequestMessage.MessageMode.NET_ASCII;
 
         this.validRRQMessage = new RequestMessage(RRQ, validFileName, validMode);
         this.validWRQMessage = new RequestMessage(WRQ, validFileName, validMode);
@@ -46,23 +46,42 @@ public class RequestMessageTest {
         for(MessageType type : requestTypes)
         {
             // Empty file name and mode
-            validParseData.put(new RequestMessage(type, "", ""), getValidMessageBytes(type, "", ""));
-            validParseData.put(new RequestMessage(type, validFileName, validMode), getValidMessageBytes(type, validFileName, validMode));
+            validParseData.put(new RequestMessage(type, "", RequestMessage.MessageMode.NET_ASCII), getValidMessageBytes(type, "", RequestMessage.MessageMode.NET_ASCII.getModeName()));
+            validParseData.put(new RequestMessage(type, "", RequestMessage.MessageMode.OCTET), getValidMessageBytes(type, "", RequestMessage.MessageMode.OCTET.getModeName()));
+            validParseData.put(new RequestMessage(type, "", RequestMessage.MessageMode.MAIL), getValidMessageBytes(type, "", RequestMessage.MessageMode.MAIL.getModeName()));
+
+            // Valid File names
+            validParseData.put(new RequestMessage(type, validFileName, RequestMessage.MessageMode.NET_ASCII), getValidMessageBytes(type, validFileName, RequestMessage.MessageMode.NET_ASCII.getModeName()));
+            validParseData.put(new RequestMessage(type, validFileName, RequestMessage.MessageMode.OCTET), getValidMessageBytes(type, validFileName, RequestMessage.MessageMode.OCTET.getModeName()));
+            validParseData.put(new RequestMessage(type, validFileName, RequestMessage.MessageMode.MAIL), getValidMessageBytes(type, validFileName, RequestMessage.MessageMode.MAIL.getModeName()));
         }
 
         // Set up invalid parsing data
         invalidParseData = new ArrayList<>();
 
         // Packet empty
-        invalidParseData.add(new Pair<>("Empty Packet", new byte[0]));
-        invalidParseData.add(new Pair<>("RRQ: Packet Too Small / Missing FileName & Mode", new byte[]{ 0, 1 }));
-        invalidParseData.add(new Pair<>("WRQ: Packet Too Small / Missing FileName & Mode", new byte[]{ 0, 2 }));
-        invalidParseData.add(new Pair<>("RRQ: Packet Too Small / Missing Mode", new byte[]{ 0, 1, 0 }));
-        invalidParseData.add(new Pair<>("WRQ: Packet Too Small / Missing Mode", new byte[]{ 0, 2, 0 }));
-        invalidParseData.add(new Pair<>("Invalid Message Type", new byte[]{ 0, 3, 0, 0 }));
-        invalidParseData.add(new Pair<>("Invalid Start Byte", new byte[]{ 1, 1, 0, 0 }));
-        invalidParseData.add(new Pair<>("RRQ: Packet too large", new byte[]{ 0, 1, 0, 0, 0 }));
-        invalidParseData.add(new Pair<>("WRQ: Packet too large", new byte[]{ 0, 1, 0, 0, 0 }));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[0]));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[]{ 0, 1 }));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[]{ 0, 2 }));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[]{ 0, 1, 0 }));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[]{ 0, 2, 0 }));
+        invalidParseData.add(new Pair<>("Invalid message type. Must be RRQ or WRQ. Actual: DATA", new byte[]{ 0, 3, 0, 0 }));
+        invalidParseData.add(new Pair<>("Invalid start byte. Expected 0. Actual: 1", new byte[]{ 1, 1, 0, 0 }));
+        invalidParseData.add(new Pair<>("Request Mode invalid_mode is not a valid mode", getValidMessageBytes(RRQ, validFileName, "invalid_mode")));
+        invalidParseData.add(new Pair<>("Request Mode invalid_mode is not a valid mode", getValidMessageBytes(WRQ, validFileName, "invalid_mode")));
+
+        // Create RRQ too long
+        byte[] validRRQ = getValidMessageBytes(RRQ, "", RequestMessage.MessageMode.NET_ASCII.getModeName());
+        byte[] rrqTooLongPacket = new byte[validRRQ.length + 1];
+        System.arraycopy(validRRQ, 0, rrqTooLongPacket, 0, validRRQ.length);
+
+        // Create WRQ too long
+        byte[] validWRQ = getValidMessageBytes(WRQ, "", RequestMessage.MessageMode.NET_ASCII.getModeName());
+        byte[] wrqTooLongPacket = new byte[validWRQ.length + 1];
+        System.arraycopy(validWRQ, 0, wrqTooLongPacket, 0, validWRQ.length);
+
+        invalidParseData.add(new Pair<>("Packet length is too long. There should be no data after the 0 following the mode. Number of extra bytes: 1", rrqTooLongPacket));
+        invalidParseData.add(new Pair<>("Packet length is too long. There should be no data after the 0 following the mode. Number of extra bytes: 1", wrqTooLongPacket));
     }
 
     /**

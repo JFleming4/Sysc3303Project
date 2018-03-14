@@ -211,7 +211,6 @@ class ServerWorker extends Thread implements ISessionHandler {
                     return;
                 }
 
-
                 LOG.logVerbose("Client Information: " + this.packet.getSocketAddress().toString());
                 LOG.logVerbose("File Name: " + receivedMessage.getFileName());
                 LOG.logVerbose("Full File Path: " + resourceManager.getFile(receivedMessage.getFileName()).getAbsolutePath());

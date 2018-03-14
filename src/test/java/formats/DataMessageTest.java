@@ -47,12 +47,29 @@ public class DataMessageTest {
         // Test random block number other than 1
         validParseData.put(new DataMessage(5, messageData), getValidMessageBytes(5, messageData));
 
-        invalidParseData.add(new Pair<>("Empty Packet", new byte[0]));
-        invalidParseData.add(new Pair<>("Packet Too Small / Missing Block Number", new byte[]{ 0, 3 }));
-        invalidParseData.add(new Pair<>("Packet Too Small / Missing One Byte of Block Number", new byte[]{ 0, 3, 0}));
-        invalidParseData.add(new Pair<>("Invalid Block Number (Less than One)", new byte[]{ 0, 3, 0, 0}));
-        invalidParseData.add(new Pair<>("Incorrect Start Byte", new byte[] { 1, 3, 0, 5, 84}));
-        invalidParseData.add(new Pair<>("Incorrect Message Type", new byte[] { 0, 4, 0, 5, 84}));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[0]));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[]{ 0, 3 }));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[]{ 0, 3, 0}));
+        invalidParseData.add(new Pair<>("The block number can not be less than 1", new byte[]{ 0, 3, 0, 0}));
+        invalidParseData.add(new Pair<>("Invalid start byte. Expected 0. Actual: 1", new byte[] { 1, 3, 0, 5, 84}));
+        invalidParseData.add(new Pair<>("Invalid message type. Must be DATA (3). Actual: ACK", new byte[] { 0, 4, 0, 5, 84}));
+
+        // Generate a large amount of data > MAX BLOCK SIZE
+        byte[] largeData = new byte[DataMessage.MAX_BLOCK_SIZE + 1];
+        (new Random()).nextBytes(largeData);
+
+
+        // Create large msg packet
+        byte[] msgPacket = new byte[largeData.length + 4];
+        msgPacket[0] = 0;
+        msgPacket[1] = 3;
+        msgPacket[2] = 0;
+        msgPacket[3] = 1;
+
+        // Append large data into msg packet
+        System.arraycopy(largeData, 0, msgPacket, 4, largeData.length);
+
+        invalidParseData.add(new Pair<>("The data length can not be greater than 512", msgPacket));
     }
 
     /**

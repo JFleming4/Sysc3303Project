@@ -45,11 +45,11 @@ public class AckMessageTest {
         validParseData.put(new AckMessage(0xFF00), getValidMessageBytes((short)0xFF00));
 
         // Invalid raw data
-        invalidParseData.add(new Pair<>("Empty Packet", new byte[0]));
-        invalidParseData.add(new Pair<>("Packet Too Small / No Block Number", new byte[] { 0, (byte) ACK.getType()}));
-        invalidParseData.add(new Pair<>("Packet Too Small / Missing Byte - Block Number", new byte[] { 0, (byte) ACK.getType(), 0}));
-        invalidParseData.add(new Pair<>("Wrong Start Byte", new byte[] { 1, (byte) ACK.getType()}));
-        invalidParseData.add(new Pair<>("Wrong Type", new byte[] { 0, 0, 0, 0}));
+        invalidParseData.add(new Pair<>("Invalid packet length", new byte[0]));
+        invalidParseData.add(new Pair<>("Invalid packet length", new byte[] { 0, (byte) ACK.getType()}));
+        invalidParseData.add(new Pair<>("Invalid packet length", new byte[] { 0, (byte) ACK.getType(), 0}));
+        invalidParseData.add(new Pair<>("Invalid start byte. Expected 0. Actual: 1", new byte[] { 1, (byte) ACK.getType(), 0, 0}));
+        invalidParseData.add(new Pair<>("Invalid message type. Must be ACK (4). Actual: null", new byte[] { 0, 0, 0, 0}));
 
     }
 

@@ -44,7 +44,7 @@ public class MessageTestSuite {
                 fail("Expected InvalidPacketException: " + data.getKey());
             }catch (InvalidPacketException iPE)
             {
-                System.out.println("Expected Exception: " + iPE.getLocalizedMessage());
+                assertEquals("Expecting Exception: " + data.getKey(), data.getKey(), iPE.getLocalizedMessage());
             }
         }
 

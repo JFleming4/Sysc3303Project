@@ -167,6 +167,10 @@ public class TransmitSession extends TFTPSession {
             LOG.logQuiet("Sending Write Request");
             sendMessage(sessionRequest);
 
+            // Update socket address on the next receive
+            // (since it will be the address from the new server worker)
+            setShouldUpdateSocketAddress();
+
             expectedAckBlockNumber = 0;
         }
     }

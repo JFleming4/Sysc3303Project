@@ -45,12 +45,12 @@ public class ErrorMessageTest {
         }
 
         /* Invalid Data byte arrays */
-        invalidParseData.add(new Pair<>("Empty Packet", new byte[0]));
-        invalidParseData.add(new Pair<>("Packet Too Small / Missing Error Number", new byte[]{ 0, 5 }));
-        invalidParseData.add(new Pair<>("Packet Too Small / Missing One Byte of Error Number", new byte[]{ 0, 5, 0}));
-        invalidParseData.add(new Pair<>("Invalid Error number", new byte[]{ 0, 5, 0, 8, 0}));
-        invalidParseData.add(new Pair<>("Incorrect Start Byte", new byte[] { 1, 5, 0, 0, 0 }));
-        invalidParseData.add(new Pair<>("Missing Message Null-Terminator", new byte[] { 0, 5, 0, 2, 'a', 'b', 'c'}));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[0]));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[]{ 0, 5 }));
+        invalidParseData.add(new Pair<>("Packet length too short", new byte[]{ 0, 5, 0}));
+        invalidParseData.add(new Pair<>("Invalid error code. Error Code: 8", new byte[]{ 0, 5, 0, 8, 0}));
+        invalidParseData.add(new Pair<>("Invalid start byte. Expected 0. Actual: 1", new byte[] { 1, 5, 0, 0, 0 }));
+        invalidParseData.add(new Pair<>("End of packet expected. Packet is too large.", new byte[] { 0, 5, 0, 2, 'a', 'b', 'c'}));
 
     }
 
