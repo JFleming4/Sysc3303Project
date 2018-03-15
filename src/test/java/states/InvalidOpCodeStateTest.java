@@ -8,7 +8,10 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
+
+import exceptions.InvalidPacketException;
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 
@@ -64,9 +67,9 @@ public class InvalidOpCodeStateTest {
                     .thenThrow(new RuntimeException("TEST EXCEPTION"));
 
             state.execute();
-
+            InvalidPacketMatcher matcher = new InvalidPacketMatcher(invalidPacket);
             Mockito.verify(socket, Mockito.times(0)).forwardPacket(expectedPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
-            Mockito.verify(socket, Mockito.times(1)).forwardPacket(invalidPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
+            Mockito.verify(socket, Mockito.times(1)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(GLOBAL_CONFIG.SERVER_PORT));
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
@@ -86,8 +89,9 @@ public class InvalidOpCodeStateTest {
                     .thenThrow(new RuntimeException("TEST EXCEPTION"));
 
             state.execute();
+            InvalidPacketMatcher matcher = new InvalidPacketMatcher(invalidPacket);
             Mockito.verify(socket, Mockito.times(0)).forwardPacket(expectedPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
-            Mockito.verify(socket, Mockito.times(1)).forwardPacket(invalidPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
+            Mockito.verify(socket, Mockito.times(1)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(GLOBAL_CONFIG.SERVER_PORT));
 
         } catch (IOException e) {
             Assert.fail(e.getMessage());
@@ -111,8 +115,9 @@ public class InvalidOpCodeStateTest {
             state.setClientAddress(serverSocketAddress);
             state.execute();
 
+            InvalidPacketMatcher matcher = new InvalidPacketMatcher(invalidPacket);
             Mockito.verify(socket, Mockito.times(0)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.eq(3000));
-            Mockito.verify(socket, Mockito.times(1)).forwardPacket(invalidPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
+            Mockito.verify(socket, Mockito.times(1)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(3000));
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
@@ -136,11 +141,33 @@ public class InvalidOpCodeStateTest {
             state.setClientAddress(serverSocketAddress);
             state.execute();
 
+            InvalidPacketMatcher matcher = new InvalidPacketMatcher(invalidPacket);
             Mockito.verify(socket, Mockito.times(0)).forwardPacket(Mockito.eq(expectedPacket), Mockito.eq(serverAddress), Mockito.eq(3000));
-            Mockito.verify(socket, Mockito.times(1)).forwardPacket(invalidPacket, serverAddress, GLOBAL_CONFIG.SERVER_PORT);
+            Mockito.verify(socket, Mockito.times(1)).forwardPacket(Mockito.argThat(matcher), Mockito.eq(serverAddress), Mockito.eq(3000));
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
     }
 
+}
+
+class InvalidPacketMatcher implements ArgumentMatcher<DatagramPacket> {
+	private DatagramPacket packet;
+	
+	public InvalidPacketMatcher(DatagramPacket packet) {
+		this.packet = packet;
+	}
+	
+	@Override
+	public boolean matches(DatagramPacket p) {
+		byte [] packetData = packet.getData();
+		byte [] pData = p.getData();
+		if( p.getLength() == packet.getLength() ) {
+			for(int i = 0; i < p.getLength(); i++) {
+				if(pData[i] != packetData[i]) return false;
+			}
+			return true;
+		}
+		return false;
+	}
 }

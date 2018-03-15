@@ -32,7 +32,10 @@ public class InvalidOpCodeState extends ForwardState{
             byte [] data = new byte[] {0,7,0,1};
             super.forwardPacket(new DatagramPacket(data, data.length, packet.getSocketAddress()));
         }
-        super.forwardPacket(packet);
+        else
+        {
+        	super.forwardPacket(packet);
+        }
     }
 
 
