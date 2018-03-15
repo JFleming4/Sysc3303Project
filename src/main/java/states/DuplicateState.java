@@ -1,6 +1,5 @@
 package states;
 
-import static resources.Configuration.GLOBAL_CONFIG;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -14,6 +13,7 @@ import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 
 public class DuplicateState extends ForwardState {
+	public static final String MODE = "DUP";
 	private ErrorChecker checker;
 	
 	public DuplicateState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker) throws SocketException {
@@ -23,6 +23,11 @@ public class DuplicateState extends ForwardState {
 	
 	public DuplicateState(TFTPDatagramSocket socket, InetAddress serverAddress) throws SocketException {
 		this(socket, serverAddress, null);
+	}
+
+	@Override
+	public String getMode() {
+		return MODE;
 	}
 	
 	public void setErrorChecker(ErrorChecker checker) {

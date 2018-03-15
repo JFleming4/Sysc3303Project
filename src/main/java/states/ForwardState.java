@@ -13,6 +13,7 @@ import logging.Logger;
 import socket.TFTPDatagramSocket;
 
 public class ForwardState extends State {
+	public static final String MODE = "NORMAL";
 	private static final int SOCKET_TIMEOUT = 1000;
 	protected static final Logger LOG = new Logger("ErrorSimulator");
 
@@ -29,11 +30,15 @@ public class ForwardState extends State {
 		this.stopping = false;
 	}
 
+	public String getMode() {
+		return MODE;
+	}
+
 	@Override
 	public State execute() {
 		DatagramPacket incomingPacket;
 
-		LOG.logQuiet("Error Simulator is running.");
+		LOG.logQuiet("Error Simulator is running in " + getMode() + " mode.");
 		LOG.logVerbose("Waiting for request from client");
 		while (!connection.isClosed() && !stopping) {
 			try {

@@ -9,7 +9,7 @@ import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 
 public class LostPacketState extends ForwardState {
-	
+	public static final String MODE = "LOSE";
 	private ErrorChecker checker;
 	
 	public LostPacketState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker) throws SocketException {
@@ -19,6 +19,11 @@ public class LostPacketState extends ForwardState {
 	
 	public LostPacketState(TFTPDatagramSocket socket, InetAddress serverAddress) throws SocketException {
 		this(socket, serverAddress, null);
+	}
+
+	@Override
+	public String getMode() {
+		return MODE;
 	}
 	
 	public void setErrorChecker(ErrorChecker checker) {

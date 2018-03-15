@@ -9,6 +9,7 @@ import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 
 public class DelayPacketState extends ForwardState {
+	public static final String MODE = "DELAY";
 	public static final int DEFAULT_DELAY = 1000;
 	
 	private ErrorChecker checker;
@@ -22,6 +23,11 @@ public class DelayPacketState extends ForwardState {
 	
 	public DelayPacketState(TFTPDatagramSocket socket, InetAddress serverAddress) throws SocketException {
 		this(socket, serverAddress, null, DEFAULT_DELAY);
+	}
+
+	@Override
+	public String getMode() {
+		return MODE;
 	}
 	
 	public void setErrorChecker(ErrorChecker checker) {
