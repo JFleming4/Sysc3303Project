@@ -35,7 +35,6 @@ public class InvalidOpCodeStateTest {
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outStream));
         socket = Mockito.mock(TFTPDatagramSocket.class);
-        invalidOPData = new byte[] {0,7,0,1};
         try {
             serverAddress = InetAddress.getByName(StateTestConfig.SERVER_HOST);
             serverSocketAddress = new InetSocketAddress(InetAddress.getByName(StateTestConfig.SERVER_HOST), GLOBAL_CONFIG.SERVER_PORT);
@@ -59,7 +58,7 @@ public class InvalidOpCodeStateTest {
             checker = new ErrorChecker(Message.MessageType.RRQ);
             state.setErrorChecker(checker);
             byte[] expectedRRQBytes = new RequestMessage(Message.MessageType.RRQ, StateTestConfig.FILENAME).toByteArray();
-
+            invalidOPData = duplicateDataInvOp(expectedRRQBytes);
             DatagramPacket expectedPacket = new DatagramPacket(expectedRRQBytes, expectedRRQBytes.length, serverSocketAddress);
             DatagramPacket invalidPacket = new DatagramPacket(invalidOPData, invalidOPData.length, serverSocketAddress);
             Mockito.when(socket.receive())
@@ -81,7 +80,7 @@ public class InvalidOpCodeStateTest {
             checker = new ErrorChecker(Message.MessageType.WRQ);
             state.setErrorChecker(checker);
             byte[] expectedWRQBytes = new RequestMessage(Message.MessageType.WRQ, StateTestConfig.FILENAME).toByteArray();
-
+            invalidOPData = duplicateDataInvOp(expectedWRQBytes);
             DatagramPacket expectedPacket = new DatagramPacket(expectedWRQBytes, expectedWRQBytes.length, serverSocketAddress);
             DatagramPacket invalidPacket = new DatagramPacket(invalidOPData, invalidOPData.length, serverSocketAddress);
             Mockito.when(socket.receive())
@@ -104,7 +103,7 @@ public class InvalidOpCodeStateTest {
             checker = new ErrorChecker(Message.MessageType.DATA, 1);
             state.setErrorChecker(checker);
             byte[] expectedDataBytes = new DataMessage(1, new byte[] { 0 }).toByteArray();
-
+            invalidOPData = duplicateDataInvOp(expectedDataBytes);
             DatagramPacket expectedPacket = new DatagramPacket(expectedDataBytes, expectedDataBytes.length, serverSocketAddress);
             DatagramPacket invalidPacket = new DatagramPacket(invalidOPData, invalidOPData.length, serverSocketAddress);
             Mockito.when(socket.receive())
@@ -130,7 +129,8 @@ public class InvalidOpCodeStateTest {
             state.setErrorChecker(checker);
 
             byte[] expectedACKBytes = new AckMessage(1).toByteArray();
-
+            invalidOPData = duplicateDataInvOp(expectedACKBytes);
+            
             DatagramPacket expectedPacket = new DatagramPacket(expectedACKBytes, expectedACKBytes.length, serverSocketAddress);
             DatagramPacket invalidPacket = new DatagramPacket(invalidOPData, invalidOPData.length, serverSocketAddress);
             Mockito.when(socket.receive())
@@ -147,6 +147,18 @@ public class InvalidOpCodeStateTest {
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
+    }
+    
+    public byte[] duplicateDataInvOp(byte[] arr) {
+    	byte [] arrVal = new byte[arr.length];
+    	for(int i = 0; i < arr.length; i++) {
+    		if( i != 1) {
+    			arrVal[i] = arr[i];
+    		} else {
+    			arrVal[i] = 7;
+    		}
+    	}
+    	return arrVal;
     }
 
 }

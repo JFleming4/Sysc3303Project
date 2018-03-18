@@ -202,6 +202,7 @@ public class ErrorSimulator extends Thread {
 		buffer.append("dup TYPE [BLOCK_NUM] [REPEAT_INTERVAL]\n");
 		buffer.append("lose TYPE [BLOCK_NUM] [REPEAT_INTERVAL]\n");
 		buffer.append("delay TYPE [BLOCK_NUM] [REPEAT_INTERVAL] DELAY_IN_MILLISECONDS\n");
+		buffer.append("invop TYPE [BLOCK_NUM] [REPEAT_INTERVAL]\n");
 		buffer.append("\n==== Packet Types for Error Mode States ====\n");
 		buffer.append("ack, data, rrq, wrq\n");
 		buffer.append("\n==== Example Commands for Error Mode States ====\n");
@@ -209,6 +210,7 @@ public class ErrorSimulator extends Thread {
 		buffer.append("lose data 1 - Lose the first data packet.\n");
 		buffer.append("delay rrq 6000 - Delay RRQ by 6 seconds.\n");
 		buffer.append("delay ack 1 4 6000 - Delay every 4th Ack by 6 seconds.\n");
+		buffer.append("invop data 2 - Send an invalid op code when you recieve data 2");
 		return buffer.toString();
 	}
 }

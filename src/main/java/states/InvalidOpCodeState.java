@@ -29,8 +29,9 @@ public class InvalidOpCodeState extends ForwardState{
         if (checker.check(packet)) {
             LOG.logQuiet("Sending Invalid OpCode.");
             LOG.logVerbose(packet);
-            byte [] data = new byte[] {0,7,0,1};
-            super.forwardPacket(new DatagramPacket(data, data.length, packet.getSocketAddress()));
+            byte [] data = packet.getData();
+            data[1] = 7; // set the opcode to 7
+            super.forwardPacket(new DatagramPacket(data, packet.getLength(), packet.getSocketAddress()));
         }
         else
         {

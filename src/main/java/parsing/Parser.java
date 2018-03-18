@@ -11,6 +11,7 @@ import socket.TFTPDatagramSocket;
 import states.DelayPacketState;
 import states.DuplicateState;
 import states.ForwardState;
+import states.InvalidOpCodeState;
 import states.LostPacketState;
 import util.ErrorChecker;
 
@@ -60,6 +61,12 @@ public class Parser {
 					socket,
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 1)));
+			break;
+		case "INVOP":
+			state = new InvalidOpCodeState(
+					socket, 
+					serverAddress, 
+					getChecker(subList(tokens, 1, tokens.length -1)));
 			break;
 		case "NORMAL":
 			state = new ForwardState(socket, serverAddress);
