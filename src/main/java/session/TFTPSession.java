@@ -31,6 +31,7 @@ public abstract class TFTPSession {
     private ResourceFile resourceFile;
     private MessageType incomingMessageType;
     private Message lastMessageSent;
+    private boolean shouldUpdateSocketAddress;
 
     /**
      * Initializes a TFTP Session Object with a SessionHandler and the incoming message type.
@@ -43,6 +44,7 @@ public abstract class TFTPSession {
         this.sessionComplete = false;
         this.sessionCompleteOnTimeout = false;
         this.sessionSuccess = false;
+        this.shouldUpdateSocketAddress = false;
         this.incomingMessageType = incomingMessageType;
     }
 
@@ -190,8 +192,26 @@ public abstract class TFTPSession {
             throw new SessionException();
         }
 
-        // Set current destination to most recent packet socket address
-        this.currentDestAdr = packet.getSocketAddress();
+        // Check to see if we should update the socket on receive
+        // (used by the client to connect to the server worker port)
+        if(shouldUpdateSocketAddress)
+        {
+            LOG.logVerbose("Updating socket address to: " + packet.getSocketAddress());
+            this.currentDestAdr = packet.getSocketAddress();
+            this.shouldUpdateSocketAddress = false;
+        }
+        else if (!this.currentDestAdr.equals(packet.getSocketAddress()))
+        {
+            LOG.logQuiet("Received a Packet from an Invalid Destination. Sending Error.");
+            LOG.logVerbose("Valid Destination: " + currentDestAdr);
+            LOG.logVerbose("Invalid Destination: " + packet.getSocketAddress());
+
+            // Otherwise, if the socket is not the expected socket, send an error message
+            // But, do not stop the session.
+            ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.UNKNOWN_TRANSFER_ID, "The previous packet was sent to the wrong destination");
+            sendError(errorMessage);
+            return;
+        }
 
         Message receivedMessage = Message.parseGenericMessage(packet);
 
@@ -253,6 +273,9 @@ public abstract class TFTPSession {
         this.sessionComplete = true;
     }
 
+    /**
+     * Set the session complete when the next timeout occurs
+     */
     protected synchronized final void setSessionCompleteOnTimeout() {
         LOG.logVerbose("Session will complete on socket timeout to ensure no messages are resent");
         this.sessionCompleteOnTimeout = true;
@@ -286,6 +309,30 @@ public abstract class TFTPSession {
 
         socket.sendMessage(errMsg, currentDestAdr);
         throw new SessionException();
+    }
+
+    /**
+     * Allows an ErrorMessage to be sent to the destination. DOES NOT stop the
+     * session. A SessionException will not be thrown.
+     * @param errMsg The ErrorMessage to raise
+     * @throws IOException
+     */
+    public synchronized void sendError(ErrorMessage errMsg) throws IOException {
+        LOG.logVerbose("Sending Error message:");
+        LOG.logVerbose(errMsg);
+
+        socket.sendMessage(errMsg, currentDestAdr);
+    }
+
+    /**
+     * Updates the socket address on the next receive. This will be used
+     * when the next receive is expected to have a different socket address
+     * than the current destination
+     */
+    protected synchronized void setShouldUpdateSocketAddress()
+    {
+        LOG.logVerbose("Updating socket address on the next receive");
+        this.shouldUpdateSocketAddress = true;
     }
 
     /**

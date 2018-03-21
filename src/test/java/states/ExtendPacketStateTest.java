@@ -77,7 +77,7 @@ public class ExtendPacketStateTest {
 	public void testExtendedRequest() {
 		try {
 			checker = new ErrorChecker(MessageType.RRQ);
-			byte[] testDataBytes = new RequestMessage(MessageType.RRQ, RequestMessage.DEFAULT_MODE).toByteArray();
+			byte[] testDataBytes = new RequestMessage(MessageType.RRQ, StateTestConfig.FILENAME).toByteArray();
 			testExtendedPacket(checker, testDataBytes);
 		} catch (IOException e) {
 			Assert.fail(e.getMessage());

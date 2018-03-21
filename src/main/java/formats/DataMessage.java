@@ -181,6 +181,10 @@ public class DataMessage extends Message{
         else
             sentData = Arrays.copyOfRange(data, ptr, data.length);
 
+        // Throw an exception if the sent data has a size larger than the maximum block size
+        if (sentData.length > MAX_BLOCK_SIZE)
+            throw new InvalidPacketException("The data length can not be greater than " + MAX_BLOCK_SIZE);
+
         return new DataMessage(blockNum, sentData);
     }
 

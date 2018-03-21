@@ -164,6 +164,10 @@ public class ReceiveSession extends TFTPSession {
             // Since we are on the client side, we need to first send out the request
             sendMessage(sessionRequest);
 
+            // Update socket address on the next receive
+            // (since it will be the address from the new server worker)
+            setShouldUpdateSocketAddress();
+
         } else if (requestType.equals(MessageType.WRQ)) {
 
             LOG.logVerbose("Sending WRQ ACK");

@@ -12,10 +12,51 @@ import exceptions.InvalidPacketException;
  * Representation of a TFTP Request Message
  */
 public class RequestMessage extends Message {
-    public static final String DEFAULT_MODE = "netascii";
+    public static final MessageMode DEFAULT_MODE = MessageMode.NET_ASCII;
     private MessageType type;
     private String fileName;
-    private String mode;
+    private MessageMode mode;
+
+    /**
+     * Use enumeration to keep track of all valid Message Modes in a Request Packet
+     */
+    enum MessageMode
+    {
+        NET_ASCII("netascii"),
+        OCTET("octet"),
+        MAIL("mail");
+
+        private String modeName;
+
+        MessageMode(String modeName)
+        {
+            this.modeName = modeName;
+        }
+
+        /**
+         * @return The mode name of the enum value
+         */
+        public String getModeName() {
+            return modeName;
+        }
+
+        /**
+         * Gets a MessageMode enum value from the mode parameter.
+         * @param mode The mode to search for
+         * @return The MessageMode enum value, or null if no mode enum matches the mode parameter
+         */
+        public static MessageMode getModeEnum(String mode)
+        {
+            for(MessageMode msgMode : MessageMode.values())
+            {
+                if(msgMode.modeName.equalsIgnoreCase(mode))
+                    return msgMode;
+            }
+
+            // Return null if no match is found
+            return null;
+        }
+    }
 
     /**
      * Create a DataPacket object. Throws an exception if type is null
@@ -23,7 +64,7 @@ public class RequestMessage extends Message {
      * @param fileName The file name
      * @param mode The mode
      */
-    public RequestMessage(MessageType type, String fileName, String mode) {
+    public RequestMessage(MessageType type, String fileName, MessageMode mode) {
         if (type == null || !MessageType.isRequestType(type))
             throw new RuntimeException("Invalid request type or request type can not be null");
         this.type = type;
@@ -55,7 +96,7 @@ public class RequestMessage extends Message {
     /**
      * @return The mode
      */
-    public String getMode() {
+    public MessageMode getMode() {
         return mode;
     }
 
@@ -70,7 +111,7 @@ public class RequestMessage extends Message {
         ByteArrayOutputStream bAOS = new ByteArrayOutputStream();
         bAOS.write(getFileName().getBytes());
         bAOS.write(0);
-        bAOS.write(getMode().getBytes());
+        bAOS.write(getMode().getModeName().getBytes());
         bAOS.write(0);
 
         return bAOS.toByteArray();
@@ -146,8 +187,14 @@ public class RequestMessage extends Message {
             throw new InvalidPacketException("End of packet not expected. Missing mode section.");
 
         // Read Mode from bytes
-        String mode = readStringFromBytes(packet, ptr);
-        ptr += mode.length() + 1;
+        String modeName = readStringFromBytes(packet, ptr);
+        ptr += modeName.length() + 1;
+
+        // Check mode is a valid enum value
+        MessageMode mode = MessageMode.getModeEnum(modeName);
+
+        if(mode == null)
+            throw new InvalidPacketException("Request Mode " + modeName + " is not a valid mode");
 
         // Check to see if we are at the end of the packet
         if (ptr != packet.length)
