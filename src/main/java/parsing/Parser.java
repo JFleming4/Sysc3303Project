@@ -1,7 +1,5 @@
 package parsing;
 
-import static resources.Configuration.GLOBAL_CONFIG;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -57,6 +55,12 @@ public class Parser {
 					socket,
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 1)));
+			break;
+		case InvalidOpCodeState.MODE:
+			state = new InvalidOpCodeState(
+					socket, 
+					serverAddress, 
+					getChecker(subList(tokens, 1, tokens.length -1)));
 			break;
 		case ExtendPacketState.MODE:
 			state = new ExtendPacketState(
