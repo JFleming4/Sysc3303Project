@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 
 public class InvalidOpCodeState extends ForwardState{
+	public static final String MODE = "INVOP";
     private ErrorChecker checker;
 
     public InvalidOpCodeState(TFTPDatagramSocket socket, InetAddress serverAddress, ErrorChecker checker) throws SocketException {

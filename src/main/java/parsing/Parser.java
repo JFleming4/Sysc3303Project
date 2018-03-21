@@ -1,18 +1,12 @@
 package parsing;
 
-import static resources.Configuration.GLOBAL_CONFIG;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 
 import formats.Message.MessageType;
 import socket.TFTPDatagramSocket;
-import states.DelayPacketState;
-import states.DuplicateState;
-import states.ForwardState;
-import states.InvalidOpCodeState;
-import states.LostPacketState;
+import states.*;
 import util.ErrorChecker;
 
 public class Parser {
@@ -43,32 +37,38 @@ public class Parser {
 		ForwardState state = null;
 
 		switch (tokens[0].toUpperCase()) {
-		case "DELAY":
+		case DelayPacketState.MODE:
 			state = new DelayPacketState(
 					socket,
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 2)),
 					Long.parseLong(tokens[tokens.length - 1]));
 			break;
-		case "LOSE":
+		case LostPacketState.MODE:
 			state = new LostPacketState(
 					socket,
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 1)));
 			break;
-		case "DUP":
+		case DuplicateState.MODE:
 			state = new DuplicateState(
 					socket,
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 1)));
 			break;
-		case "INVOP":
+		case InvalidOpCodeState.MODE:
 			state = new InvalidOpCodeState(
 					socket, 
 					serverAddress, 
 					getChecker(subList(tokens, 1, tokens.length -1)));
 			break;
-		case "NORMAL":
+		case ExtendPacketState.MODE:
+			state = new ExtendPacketState(
+					socket,
+					serverAddress,
+					getChecker(subList(tokens, 1, tokens.length - 1)));
+			break;
+		case ForwardState.MODE:
 			state = new ForwardState(socket, serverAddress);
 			break;
 		default:

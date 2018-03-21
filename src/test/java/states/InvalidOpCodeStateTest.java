@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
-import exceptions.InvalidPacketException;
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 
@@ -19,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.*;
+import java.util.Arrays;
 
 import static resources.Configuration.GLOBAL_CONFIG;
 
@@ -172,14 +172,6 @@ class InvalidPacketMatcher implements ArgumentMatcher<DatagramPacket> {
 	
 	@Override
 	public boolean matches(DatagramPacket p) {
-		byte [] packetData = packet.getData();
-		byte [] pData = p.getData();
-		if( p.getLength() == packet.getLength() ) {
-			for(int i = 0; i < p.getLength(); i++) {
-				if(pData[i] != packetData[i]) return false;
-			}
-			return true;
-		}
-		return false;
+		return Arrays.equals(packet.getData(), p.getData());
 	}
 }
