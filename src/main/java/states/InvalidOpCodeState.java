@@ -21,6 +21,11 @@ public class InvalidOpCodeState extends ForwardState{
         this(socket, serverAddress, null);
     }
 
+    @Override
+    public String getMode() {
+        return MODE;
+    }
+
     public void setErrorChecker(ErrorChecker checker) {
         this.checker = checker;
     }
