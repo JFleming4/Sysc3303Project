@@ -40,12 +40,10 @@ public class InvalidTIDState extends ForwardState{
             TFTPDatagramSocket invalidTIDSocket = new TFTPDatagramSocket(GLOBAL_CONFIG.SIMULATOR_PORT+500);
             invalidTIDSocket.forwardPacket(packet,packet.getAddress(), packet.getPort());
             invalidTIDSocket.receive();
+            LOG.logQuiet("Discarding packet with invalid TID.");
             invalidTIDSocket.close();
-            super.forwardRequest(packet, packet.getAddress());
         }
-        else {
-            super.forwardPacket(packet);
-        }
+        super.forwardPacket(packet);
     }
 
 
