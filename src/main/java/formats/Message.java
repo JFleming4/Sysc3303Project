@@ -165,7 +165,12 @@ public abstract class Message {
 
     public static Message parseGenericMessage(byte[] data) throws InvalidPacketException
     {
-        switch (Message.getMessageType(data))
+        MessageType type = Message.getMessageType(data);
+
+        if(type == null)
+            throw new InvalidPacketException("The Message Type was invalid.");
+
+        switch (type)
         {
             case RRQ:
             case WRQ:
