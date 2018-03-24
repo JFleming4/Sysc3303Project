@@ -38,6 +38,7 @@ public class Parser {
 
 		switch (tokens[0].toUpperCase()) {
 		case DelayPacketState.MODE:
+			if(!checkInvalidNumberParams(tokens, true)) break;
 			state = new DelayPacketState(
 					socket,
 					serverAddress,
@@ -45,30 +46,35 @@ public class Parser {
 					Long.parseLong(tokens[tokens.length - 1]));
 			break;
 		case LostPacketState.MODE:
+			if(!checkInvalidNumberParams(tokens, false)) break;
 			state = new LostPacketState(
 					socket,
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 1)));
 			break;
 		case DuplicateState.MODE:
+			if(!checkInvalidNumberParams(tokens, false)) break;
 			state = new DuplicateState(
 					socket,
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 1)));
 			break;
 		case InvalidOpCodeState.MODE:
+			if(!checkInvalidNumberParams(tokens, false)) break;
 			state = new InvalidOpCodeState(
 					socket, 
 					serverAddress, 
 					getChecker(subList(tokens, 1, tokens.length -1)));
 			break;
 		case ExtendPacketState.MODE:
+			if(!checkInvalidNumberParams(tokens, false)) break;
 			state = new ExtendPacketState(
 					socket,
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 1)));
 			break;
 		case InvalidTIDState.MODE:
+			if(!checkInvalidNumberParams(tokens, false)) break;
 			state = new InvalidTIDState(
 					socket,
 					serverAddress,
@@ -83,6 +89,32 @@ public class Parser {
 			break;
 		}
 		return state;
+	}
+	
+	private static boolean checkInvalidNumberParams(String[] tokens, boolean delay) {
+		int rqLen;
+		int otherLen;
+		if(delay) {
+			rqLen = 3;
+			otherLen = 4;
+		} else {
+			rqLen = 2;
+			otherLen = 3;
+		}
+		if(tokens.length < rqLen) {
+			displayInvalidNumberParams(tokens[0]);
+			return false;
+		}
+		if(!tokens[1].toLowerCase().equals("wrq") && !tokens[1].toLowerCase().equals("rrq")) {
+			if(tokens.length < otherLen) {
+				displayInvalidNumberParams(tokens[0]);
+				return false;
+			}
+		}
+		return true;
+	}
+	private static void displayInvalidNumberParams(String command) {
+		System.out.println("'" + command + "' was not provided with the correct amount of paramaters");
 	}
 
 	private static ErrorChecker getInvalidTIDChecker(String[] tokens) {
