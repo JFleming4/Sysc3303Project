@@ -20,6 +20,8 @@ public class Configuration {
     public final String SERVER_RESOURCE_DIR;
     public final int MAX_TRANSMIT_ATTEMPTS;
     public final int SOCKET_TIMEOUT_MS;
+    public final boolean CLIENT_DELETE_ON_FAILURE;
+    public final boolean SERVER_DELETE_ON_FAILURE;
 
     public Configuration()
     {
@@ -31,6 +33,8 @@ public class Configuration {
         SOCKET_TIMEOUT_MS = 5000;
         CLIENT_RESOURCE_DIR = "client";
         SERVER_RESOURCE_DIR = "server";
+        CLIENT_DELETE_ON_FAILURE = true;
+        SERVER_DELETE_ON_FAILURE = true;
     }
 
     /**

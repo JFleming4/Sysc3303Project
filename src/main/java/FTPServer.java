@@ -348,16 +348,7 @@ class ServerWorker extends Thread implements ISessionHandler {
      * @param session The ReceiveSession
      */
     private void sessionErrorReceived(ReceiveSession session) {
-        // Remove the file, as it is incomplete
-        ResourceFile file = session.getResourceFile();
-
         LOG.logQuiet("Failed to receive correct file.");
-
-        // Remove file
-        if (file.delete())
-            LOG.logQuiet("Deleted partial file: " + file.getAbsolutePath());
-        else
-            LOG.logQuiet("Failed to delete partial file: " + file.getAbsolutePath());
     }
 
     /**
@@ -400,5 +391,21 @@ class ServerWorker extends Thread implements ISessionHandler {
                 session.raiseError(message);
                 break;
         }
+    }
+
+    @Override
+    public void sessionCompleted(TFTPSession session) {
+        ResourceFile file = session.getResourceFile();
+
+        if(!session.getSessionSuccess() && GLOBAL_CONFIG.CLIENT_DELETE_ON_FAILURE)
+        {
+            // Remove file
+            if (file.delete())
+                LOG.logQuiet("Deleted partial file: " + file.getAbsolutePath());
+            else
+                LOG.logQuiet("Failed to delete partial file: " + file.getAbsolutePath());
+        }
+
+        LOG.logQuiet("Session complete. Success: " + session.getSessionSuccess());
     }
 }

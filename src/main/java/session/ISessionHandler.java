@@ -38,4 +38,11 @@ public interface ISessionHandler {
      * @param message The ERROR message representing the error that was received by the destination.
      */
     void sessionErrorReceived(TFTPSession session, ErrorMessage message);
+
+    /**
+     * The Callback that gets called when a session completes
+     *
+     * @param session The TFTPSession where the error was received.
+     */
+    void sessionCompleted(TFTPSession session);
 }

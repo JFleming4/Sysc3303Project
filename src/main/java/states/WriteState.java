@@ -85,6 +85,14 @@ public class WriteState extends State implements ISessionHandler{
 
     @Override
     public void sessionErrorReceived(TFTPSession session, ErrorMessage message) {
+        LOG.logQuiet("The following ERROR was received from the server: " + message.getMessage());
+    }
 
+    /**
+     * @param session The TFTPSession where the error was received.
+     */
+    @Override
+    public void sessionCompleted(TFTPSession session) {
+        LOG.logQuiet("Write complete. Success: " + session.getSessionSuccess());
     }
 }

@@ -1,4 +1,4 @@
-﻿SYSC 3303 Iteration 2
+﻿SYSC 3303 Iteration 4
 ======================
 
 
@@ -7,18 +7,22 @@ Team contribution breakdown:
 Justin Fleming: 100934170
     - Handle IO Errors
     - Error Simulator
+    - ErrorSimulator Invalid OP Code
 Noah Segal: 100911661
     - Handle IO Errors
     - Handle duplicate, delay, lost packets
 Derek Stride: 100955939
     - Refactor to introduce state-based behaviour
     - Error Simulator
+    - UML Diagrams
 Michael Vezina: 100934579
     - UML & Timing Diagrams
     - Handle duplicate, delay, lost packets
+    - Handle packet format errors
 Irusha Vidanamadura: 100935300
     - Testing & Integration
     - UML & Timing Diagrams
+    - Invalid TID packet and Extend packet changes for Error Sim
 
 
 Setup Instructions:
@@ -34,6 +38,9 @@ Error Simulator Commands + Example:
  - lose: (lose DATA 1 0) drops the first data packet and all subsequent packets (2, 3, 4, etc.)
  - dup: (dup DATA 1 2) duplicates the first data packet and every second subsequent packet (3, 5, 7, etc.)
  - delay: (delay DATA 1 0 69000) delays the first data packet and all subsequent packets (2, 3, 4, etc.) for 69 seconds.
+ - invop: (invop data 2) Send an invalid op code when you recieve data 2
+ - invtid: (invtid data 2) Send a packet invalid tid code and then the normal packet when you receive data 2
+ - extend: (extend data 1 4) - Extend every 4th Data Message with fake data.
  - normal: normal operation
  - help: "I need somebody! Help! Not just anybody!" – Lennon-McCartney. (You should know what this operation does)
 
@@ -105,7 +112,31 @@ DELAYED PACKET:
 	- 'read read-test.txt localhost'
 	or
 	- 'write write-test.txt localhost'
-	
+
+Invalid OP Code PACKET:
+- ErrorSim:
+    - 'invop data 2' (Forward data 2, except replace the OP Code with an invalid op code)
+- Client:
+    - 'read read-test.txt localhost'
+    or
+    - 'write write-test.txt localhost'
+
+Invalid TID PACKET:
+- ErrorSim:
+    - 'invtid data 2' (Forward data 2, using another TID)
+- Client:
+    - 'read read-test.txt localhost'
+    or
+    - 'write write-test.txt localhost'
+
+Packet DATA too large:
+- ErrorSim:
+    - 'extend data 2' (Extend DATA packet byte array with block == 2 with fake data)
+- Client:
+    - 'read read-test.txt localhost'
+    or
+    - 'write write-test.txt localhost'
+
 Test File Locations:
 ====================
 The locations for reading and writing are listed under the `resources` folder.
