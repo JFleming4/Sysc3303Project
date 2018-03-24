@@ -68,6 +68,12 @@ public class Parser {
 					serverAddress,
 					getChecker(subList(tokens, 1, tokens.length - 1)));
 			break;
+		case InvalidTIDState.MODE:
+			state = new InvalidTIDState(
+					socket,
+					serverAddress,
+					getInvalidTIDChecker(subList(tokens, 1, tokens.length - 1)));
+			break;
 		case ForwardState.MODE:
 			state = new ForwardState(socket, serverAddress);
 			break;
@@ -77,7 +83,15 @@ public class Parser {
 			break;
 		}
 		return state;
-	}	
+	}
+
+	private static ErrorChecker getInvalidTIDChecker(String[] tokens) {
+		String typeMatch = tokens[0].toUpperCase();
+		if ( !typeMatch.equals(MessageType.DATA.toString()) && !typeMatch.equals(MessageType.ACK.toString())) {
+			throw new ParseException("Can only perform Invalid TID State on DATA and ACK Packets");
+		}
+		return getChecker(tokens);
+	}
 	
 	private static ErrorChecker getChecker(String[] tokens) {
 		MessageType type;

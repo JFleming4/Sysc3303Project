@@ -4,7 +4,6 @@ import formats.AckMessage;
 import formats.DataMessage;
 import formats.Message.MessageType;
 import formats.RequestMessage;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,9 +12,7 @@ import org.mockito.Mockito;
 import socket.TFTPDatagramSocket;
 import util.ErrorChecker;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.*;
 import java.util.Arrays;
 
@@ -30,8 +27,6 @@ public class ExtendPacketStateTest {
 	
 	@Before
 	public void setup() {
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		System.setOut(new PrintStream(outStream));
 		socket = Mockito.mock(TFTPDatagramSocket.class);
 		try {
 			serverAddress = InetAddress.getByName(StateTestConfig.SERVER_HOST);
@@ -45,11 +40,6 @@ public class ExtendPacketStateTest {
 			e.printStackTrace();
 		}
 	}
-	@After
-	public void tearDown() {
-		System.setOut(System.out);
-	}
-
 
 	@Test
 	public void testExtendedAck() {

@@ -209,7 +209,7 @@ public abstract class TFTPSession {
             // Otherwise, if the socket is not the expected socket, send an error message
             // But, do not stop the session.
             ErrorMessage errorMessage = new ErrorMessage(ErrorMessage.ErrorType.UNKNOWN_TRANSFER_ID, "The previous packet was sent to the wrong destination");
-            sendError(errorMessage);
+            sendError(errorMessage,packet.getSocketAddress());
             return;
         }
 
@@ -315,13 +315,14 @@ public abstract class TFTPSession {
      * Allows an ErrorMessage to be sent to the destination. DOES NOT stop the
      * session. A SessionException will not be thrown.
      * @param errMsg The ErrorMessage to raise
+     * @param socketAddress The socket to send to
      * @throws IOException
      */
-    public synchronized void sendError(ErrorMessage errMsg) throws IOException {
+    public synchronized void sendError(ErrorMessage errMsg, SocketAddress socketAddress) throws IOException {
         LOG.logVerbose("Sending Error message:");
         LOG.logVerbose(errMsg);
 
-        socket.sendMessage(errMsg, currentDestAdr);
+        socket.sendMessage(errMsg, socketAddress);
     }
 
     /**
