@@ -1,24 +1,19 @@
-﻿SYSC 3303 Iteration 2
+﻿SYSC 3303 Iteration 4
 ======================
 
 
 Team contribution breakdown:
 ============================
 Justin Fleming: 100934170
-    - Handle IO Errors
-    - Error Simulator
+    - Invalid Op Code handling
 Noah Segal: 100911661
-    - Handle IO Errors
-    - Handle duplicate, delay, lost packets
+    - Client and Server Changes to accomodate Error Sim code
 Derek Stride: 100955939
-    - Refactor to introduce state-based behaviour
-    - Error Simulator
+    - UML Diagrams
 Michael Vezina: 100934579
-    - UML & Timing Diagrams
-    - Handle duplicate, delay, lost packets
+    - Client and Server Changes to accomodate Error Sim code
 Irusha Vidanamadura: 100935300
-    - Testing & Integration
-    - UML & Timing Diagrams
+    - Invalid TID packet and Extend packet changes for Error Sim
 
 
 Setup Instructions:
@@ -105,7 +100,33 @@ DELAYED PACKET:
 	- 'read read-test.txt localhost'
 	or
 	- 'write write-test.txt localhost'
-	
+
+EXTEND PACKET:
+- ErrorSim:
+	- 'extend DATA 1 2' extends packet to above the 516 byte limit)
+- Client:
+	- 'read read-test.txt localhost'
+	or
+	- 'write write-test.txt localhost'
+
+INVALID OPCODE PACKET:
+- ErrorSim:
+	- 'invop DATA 1 2' (changes op code of packet)
+- Client:
+	- 'read read-test.txt localhost'
+	or
+	- 'write write-test.txt localhost'
+
+INVALID TID PACKET:
+- ErrorSim:
+	- 'invtid DATA 1 2' (creates another client connection to send the packet to server worker with different source port)
+- Client:
+	- 'read read-test.txt localhost'
+	or
+	- 'write write-test.txt localhost'
+
+
+
 Test File Locations:
 ====================
 The locations for reading and writing are listed under the `resources` folder.
