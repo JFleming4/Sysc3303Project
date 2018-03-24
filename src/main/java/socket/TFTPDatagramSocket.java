@@ -90,7 +90,7 @@ public class TFTPDatagramSocket extends DatagramSocket {
      * @throws IOException
      */
     public DatagramPacket receive() throws IOException {
-        DatagramPacket packet = new DatagramPacket(new byte[Message.MAX_PACKET_SIZE], Message.MAX_PACKET_SIZE);
+        DatagramPacket packet = new DatagramPacket(new byte[Message.MAX_PACKET_SIZE + 1], Message.MAX_PACKET_SIZE + 1);
         super.receive(packet);
 
         // Trim and set byte array
