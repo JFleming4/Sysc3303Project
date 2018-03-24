@@ -141,6 +141,8 @@ public abstract class TFTPSession {
         else
             LOG.logQuiet("The TFTP Session Failed.");
 
+        // Call session complete callback
+        sessionHandler.sessionCompleted(this);
 
         LOG.logQuiet("---- End TFTP Session ----");
         return sessionSuccess;

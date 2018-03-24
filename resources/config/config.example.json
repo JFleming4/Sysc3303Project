@@ -1,7 +1,11 @@
 {
-  "DEBUG_MODE": false,
-  "SERVER_PORT": 8069,
+  "DEBUG_MODE": true,
   "SIMULATOR_PORT": 8023,
+
   "SERVER_RESOURCE_DIR": "server",
-  "CLIENT_RESOURCE_DIR": "client"
+  "SERVER_DELETE_ON_FAILURE": true,
+  "SERVER_PORT": 8069,
+
+  "CLIENT_RESOURCE_DIR": "client",
+  "CLIENT_DELETE_ON_FAILURE":true
 }

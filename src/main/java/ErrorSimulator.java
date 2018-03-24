@@ -27,7 +27,7 @@ public class ErrorSimulator extends Thread {
 		this.state = new ForwardState(connection, serverAddress);
 		
 		LOG.logQuiet("Listening on port " + connection.getLocalPort());
-		LOG.logQuiet("Server Address: " + connection.getInetAddress());
+		LOG.logQuiet("Server Address: " + serverAddress);
 	}
 
 	public void stopServer() {

@@ -119,10 +119,25 @@ public class ReadState extends State implements ISessionHandler {
     public void sessionErrorReceived(TFTPSession session, ErrorMessage message) {
         LOG.logQuiet("The following ERROR was received from the server: " + message.getMessage());
         LOG.logVerbose(message);
-
         LOG.logQuiet("Failed to receive correct file.");
+    }
 
-        // Delete file on Error
-        session.getResourceFile().delete();
+    /**
+     * The sessionCompleted callback. Delete the partial resource
+     * file if the session failed.
+     * @param session The TFTPSession where the error was received.
+     */
+    @Override
+    public void sessionCompleted(TFTPSession session) {
+
+        if(!session.getSessionSuccess() && GLOBAL_CONFIG.CLIENT_DELETE_ON_FAILURE)
+        {
+            LOG.logQuiet("Deleting the incomplete (corrupt) resource file.");
+
+            // Delete file on Error
+            session.getResourceFile().delete();
+        }
+
+        LOG.logQuiet("Read complete. Success: " + session.getSessionSuccess());
     }
 }
