@@ -61,7 +61,9 @@ public class ReceiveSession extends TFTPSession {
         // It is safe to assume that the message passed in will be of type DataMessage
         DataMessage dataMessage = (DataMessage) message;
 
-        if (dataMessage.getBlockNum() < lastBlockAcked) {
+        if (lastBlockAcked == DataMessage.MAX_BLOCK_NUM && dataMessage.getBlockNum() == 1) {
+        	    // Looping
+        } else if (dataMessage.getBlockNum() < lastBlockAcked) {
             LOG.logVerbose("Received DATA with old block: " + dataMessage.getBlockNum() + ". Ignoring DATA block");
             return;
         }

@@ -397,7 +397,7 @@ class ServerWorker extends Thread implements ISessionHandler {
     public void sessionCompleted(TFTPSession session) {
         ResourceFile file = session.getResourceFile();
 
-        if(!session.getSessionSuccess() && GLOBAL_CONFIG.CLIENT_DELETE_ON_FAILURE)
+        if(!session.getSessionSuccess() && GLOBAL_CONFIG.CLIENT_DELETE_ON_FAILURE && session instanceof ReceiveSession)
         {
             // Remove file
             if (file.delete())

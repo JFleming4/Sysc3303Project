@@ -17,7 +17,7 @@ public class DataMessage extends Message{
     private int blockNum;
     private byte[] data;
     public static final int MAX_BLOCK_SIZE = 512;
-    private static final int MAX_BLOCK_NUM = 0x0000FFFF;
+    public static final int MAX_BLOCK_NUM = 0x0000FFFF;
 
     /**
      * Create a data message object
@@ -108,17 +108,13 @@ public class DataMessage extends Message{
         // Calculate number of blocks needed
         int numBlocks = data.length / MAX_BLOCK_SIZE + 1;
 
-
-        if (numBlocks > MAX_BLOCK_NUM)
-            throw new IOException("The number of blocks needed to represent this data is too large. (" + numBlocks + ")");
-
         List<DataMessage> dataSequence = new ArrayList<>();
 
         // Truncate the data into blocks, and encapsulate them into a DataMessage object
         for(int i = 0; i < numBlocks; i++)
         {
             byte[] curBlock = Arrays.copyOfRange(data, i * MAX_BLOCK_SIZE, Math.min(i * MAX_BLOCK_SIZE + MAX_BLOCK_SIZE, data.length));
-            DataMessage msg = new DataMessage(i + 1, curBlock);
+            DataMessage msg = new DataMessage(1 + (i % MAX_BLOCK_NUM), curBlock);
             dataSequence.add(msg);
         }
 
