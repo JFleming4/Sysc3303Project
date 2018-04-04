@@ -395,16 +395,6 @@ class ServerWorker extends Thread implements ISessionHandler {
 
     @Override
     public void sessionCompleted(TFTPSession session) {
-        ResourceFile file = session.getResourceFile();
-
-        if(!session.getSessionSuccess() && GLOBAL_CONFIG.CLIENT_DELETE_ON_FAILURE && session instanceof ReceiveSession)
-        {
-            // Remove file
-            if (file.delete())
-                LOG.logQuiet("Deleted partial file: " + file.getAbsolutePath());
-            else
-                LOG.logQuiet("Failed to delete partial file: " + file.getAbsolutePath());
-        }
 
         LOG.logQuiet("Session complete. Success: " + session.getSessionSuccess());
     }
